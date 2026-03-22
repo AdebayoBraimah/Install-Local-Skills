@@ -58,6 +58,21 @@ SKILLS=(
 
 # =========================================================================
 #
+# MCP servers registry
+#
+#   Each entry is a triplet: <name> <scope> <command...>
+#   The command portion may contain multiple tokens.
+#
+# =========================================================================
+
+MCP_SERVERS=(
+  # --- Reasoning ---
+  "sequential-thinking"  "user"  "npx -y @modelcontextprotocol/server-sequential-thinking"
+)
+
+
+# =========================================================================
+#
 # Helper functions
 #
 # =========================================================================
@@ -84,9 +99,12 @@ Usage(){
       globally (--global) for the agents: claude-code and
       antigravity.
 
+      Also installs required MCP servers via the claude CLI
+      when available.
+
       NOTE:
       - codex and gemini are universal and already handled.
-      - If installing skills for the first time, use 
+      - If installing skills for the first time, use
         the interactive install process with:
 
         npx skills add https://github.com/vercel-labs/skills --skill find-skills
@@ -202,6 +220,34 @@ install_skill(){
 }
 
 
+#######################################
+# Installs a single MCP server using
+#   claude mcp add.
+# Arguments:
+#   name:  MCP server name
+#   scope: Scope flag (user, project)
+#   cmd:   Command to run the server
+# Globals:
+#   FAILED_MCPS (appended on failure)
+#######################################
+install_mcp(){
+  local name="${1}"
+  local scope="${2}"
+  local cmd="${3}"
+
+  echo_blue "Installing MCP: ${name}  (scope: ${scope})"
+
+  if claude mcp add "${name}" -s "${scope}" -- ${cmd}; then
+    echo_green "  -> MCP ${name} installed successfully"
+  else
+    echo_red "  -> Failed to install MCP ${name}"
+    FAILED_MCPS+=("${name}")
+  fi
+
+  echo
+}
+
+
 # =========================================================================
 #
 # Main function
@@ -242,6 +288,11 @@ main(){
     exit_error "npx not found. Please install Node.js (https://nodejs.org/) first."
   fi
 
+  if ! command -v claude &>/dev/null; then
+    echo_yellow "claude CLI not found — skipping MCP server installation."
+    local skip_mcp=true
+  fi
+
   #
   # Install skills
   #============================
@@ -267,6 +318,32 @@ main(){
   done
 
   #
+  # Install MCP servers
+  #============================
+
+  FAILED_MCPS=()
+
+  local total_mcps=$(( ${#MCP_SERVERS[@]} / 3 ))
+
+  if [[ "${skip_mcp}" != true && ${total_mcps} -gt 0 ]]; then
+    echo
+    echo_blue "=========================================="
+    echo_blue " Installing ${total_mcps} MCP Server(s)"
+    echo_blue "=========================================="
+    echo
+
+    local j=0
+    while [[ ${j} -lt ${#MCP_SERVERS[@]} ]]; do
+      local mcp_name="${MCP_SERVERS[${j}]}"
+      local mcp_scope="${MCP_SERVERS[$(( j + 1 ))]}"
+      local mcp_cmd="${MCP_SERVERS[$(( j + 2 ))]}"
+      j=$(( j + 3 ))
+
+      install_mcp "${mcp_name}" "${mcp_scope}" "${mcp_cmd}"
+    done
+  fi
+
+  #
   # Summary
   #============================
 
@@ -282,12 +359,23 @@ main(){
     done
   fi
 
+  if [[ "${skip_mcp}" != true ]]; then
+    if [[ ${#FAILED_MCPS[@]} -eq 0 ]]; then
+      echo_green " All ${total_mcps} MCP server(s) installed successfully!"
+    else
+      echo_yellow " ${#FAILED_MCPS[@]} MCP server(s) failed to install:"
+      for mcp in "${FAILED_MCPS[@]}"; do
+        echo_red "   - ${mcp}"
+      done
+    fi
+  fi
+
   echo_blue "=========================================="
   echo
   echo_green "Installed skills can be listed with: npx skills list --global"
 
-  # Exit with failure if any skills failed
-  if [[ ${#FAILED_SKILLS[@]} -gt 0 ]]; then
+  # Exit with failure if any skills or MCPs failed
+  if [[ ${#FAILED_SKILLS[@]} -gt 0 || ${#FAILED_MCPS[@]} -gt 0 ]]; then
     exit 1
   fi
 
