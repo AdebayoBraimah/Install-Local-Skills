@@ -38,6 +38,21 @@ SKILLS=(
   "ailabs-393/ai-labs-claude-skills"                                            "research-paper-writer"
   "langchain-ai/deepagents"                                                     "web-research"
   "davila7/claude-code-templates"                                               "research-engineer"
+
+  # --- Diagrams ---
+  "softaworks/agent-toolkit"                                                    "mermaid-diagrams"
+
+  # --- Productivity ---
+  "ctsstc/get-shit-done-skills"                                                 "gsd"
+
+  # --- Documentation ---
+  "intellectronica/agent-skills"                                                "context7"
+
+  # --- Writing ---
+  "davila7/claude-code-templates"                                               "humanizer"
+
+  # --- Reasoning ---
+  "mrgoonie/claudekit-skills"                                                   "sequential-thinking"
 )
 
 
