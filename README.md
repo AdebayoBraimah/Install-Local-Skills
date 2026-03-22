@@ -38,7 +38,7 @@ Running the script prints a progress banner, per-skill status, and a final summa
 
 ```
 ==========================================
- Installing 11 Agent Skills
+ Installing 17 Agent Skills
  Agents: claude-code, antigravity
 ==========================================
 
@@ -51,7 +51,7 @@ Installing: find-skills  (from vercel-labs/skills)
 ...
 
 ==========================================
- All 11 skills installed successfully!
+ All 17 skills installed successfully!
 ==========================================
 
 Installed skills can be listed with: npx skills list --global
@@ -83,6 +83,11 @@ If any skills fail, the summary lists them and the script exits with a non-zero 
 | Research | `research-paper-writer` | ailabs-393/ai-labs-claude-skills |
 | Research | `web-research` | langchain-ai/deepagents |
 | Research | `research-engineer` | davila7/claude-code-templates |
+| Diagrams | `mermaid-diagrams` | softaworks/agent-toolkit |
+| Productivity | `gsd` | ctsstc/get-shit-done-skills |
+| Documentation | `context7` | intellectronica/agent-skills |
+| Writing | `humanizer` | davila7/claude-code-templates |
+| Reasoning | `sequential-thinking` | mrgoonie/claudekit-skills |
 
 ## Adding or Removing Skills
 
