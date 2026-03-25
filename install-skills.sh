@@ -6,6 +6,10 @@
 # Target agents: claude-code, antigravity
 # NOTE: codex and gemini are universal and already handled.
 
+# TODO:
+# Add these to the install list for plug-ins:
+# https://github.com/ooiyeefei/ccc/tree/main/skills/excalidraw
+# npm install -g @mermaid-js/mermaid-cli # need this for mermaid-diagram skill
 
 # =========================================================================
 #
