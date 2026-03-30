@@ -39,7 +39,7 @@ Running the script prints a progress banner, per-skill status, and a final summa
 
 ```
 ==========================================
- Installing 16 Agent Skills
+ Installing 17 Agent Skills
  Agents: claude-code, antigravity
 ==========================================
 
@@ -52,7 +52,7 @@ Installing: find-skills  (from vercel-labs/skills)
 ...
 
 ==========================================
- All 16 skills installed successfully!
+ All 17 skills installed successfully!
 ==========================================
 
 Installed skills can be listed with: npx skills list --global
@@ -88,6 +88,7 @@ If any skills or MCP servers fail, the summary lists them and the script exits w
 | Diagrams | `excalidraw` | ooiyeefei/ccc |
 | Documentation | `context7` | intellectronica/agent-skills |
 | Writing | `humanizer` | davila7/claude-code-templates |
+| CLI | `cli-anything` | hkuds/cli-anything |
 
 ## npm Global Dependencies
 
@@ -96,6 +97,7 @@ Some skills require globally installed npm packages. These are installed automat
 | Package | Required by |
 |---|---|
 | `@mermaid-js/mermaid-cli` | mermaid-diagrams |
+
 
 ## Adding or Removing Skills
 

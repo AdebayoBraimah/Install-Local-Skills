@@ -49,6 +49,9 @@ SKILLS=(
 
   # --- Diagrams ---
   "ooiyeefei/ccc"                                                               "excalidraw"
+
+  # --- CLI ---
+  "hkuds/cli-anything"                                                          "cli-anything"
 )
 
 
