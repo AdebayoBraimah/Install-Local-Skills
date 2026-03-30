@@ -39,7 +39,7 @@ Running the script prints a progress banner, per-skill status, and a final summa
 
 ```
 ==========================================
- Installing 16 Agent Skills
+ Installing 15 Agent Skills
  Agents: claude-code, antigravity
 ==========================================
 
@@ -52,7 +52,7 @@ Installing: find-skills  (from vercel-labs/skills)
 ...
 
 ==========================================
- All 16 skills installed successfully!
+ All 15 skills installed successfully!
 ==========================================
 
 Installed skills can be listed with: npx skills list --global
@@ -85,9 +85,9 @@ If any skills or MCP servers fail, the summary lists them and the script exits w
 | Research | `web-research` | langchain-ai/deepagents |
 | Research | `research-engineer` | davila7/claude-code-templates |
 | Diagrams | `mermaid-diagrams` | softaworks/agent-toolkit |
-| Productivity | `gsd` | ctsstc/get-shit-done-skills |
 | Documentation | `context7` | intellectronica/agent-skills |
 | Writing | `humanizer` | davila7/claude-code-templates |
+
 ## Adding or Removing Skills
 
 Edit the `SKILLS` array at the top of `install-skills.sh`. Each skill is a pair of lines — a repo and a skill name:

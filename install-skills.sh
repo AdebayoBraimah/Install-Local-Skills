@@ -7,9 +7,8 @@
 # NOTE: codex and gemini are universal and already handled.
 
 # TODO:
-# Add these to the install list for plug-ins:
-# https://github.com/ooiyeefei/ccc/tree/main/skills/excalidraw
-# npm install -g @mermaid-js/mermaid-cli # need this for mermaid-diagram skill
+#  - Add excalidraw: https://github.com/ooiyeefei/ccc/tree/main/skills/excalidraw
+#  - Install mermaid-cli globally (npm install -g @mermaid-js/mermaid-cli) for mermaid-diagrams skill
 
 # =========================================================================
 #
@@ -45,9 +44,6 @@ SKILLS=(
 
   # --- Diagrams ---
   "softaworks/agent-toolkit"                                                    "mermaid-diagrams"
-
-  # --- Productivity ---
-  "ctsstc/get-shit-done-skills"                                                 "gsd"
 
   # --- Documentation ---
   "intellectronica/agent-skills"                                                "context7"
