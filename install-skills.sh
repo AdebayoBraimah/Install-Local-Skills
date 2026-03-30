@@ -6,9 +6,6 @@
 # Target agents: claude-code, antigravity
 # NOTE: codex and gemini are universal and already handled.
 
-# TODO:
-#  - Install mermaid-cli globally (npm install -g @mermaid-js/mermaid-cli) for mermaid-diagrams skill
-
 # =========================================================================
 #
 # Skills registry
@@ -65,6 +62,20 @@ SKILLS=(
 # =========================================================================
 
 MCP_SERVERS=(
+)
+
+
+# =========================================================================
+#
+# npm global packages registry
+#
+#   Each entry is a single npm package name to install globally.
+#
+# =========================================================================
+
+NPM_GLOBALS=(
+  # --- Diagrams (required by mermaid-diagrams skill) ---
+  "@mermaid-js/mermaid-cli"
 )
 
 
@@ -245,6 +256,30 @@ install_mcp(){
 }
 
 
+#######################################
+# Installs a single npm package globally
+#   using npm install -g.
+# Arguments:
+#   pkg: npm package name
+# Globals:
+#   FAILED_NPMS (appended on failure)
+#######################################
+install_npm_global(){
+  local pkg="${1}"
+
+  echo_blue "Installing npm package: ${pkg}"
+
+  if npm install -g "${pkg}"; then
+    echo_green "  -> ${pkg} installed successfully"
+  else
+    echo_red "  -> Failed to install ${pkg}"
+    FAILED_NPMS+=("${pkg}")
+  fi
+
+  echo
+}
+
+
 # =========================================================================
 #
 # Main function
@@ -341,6 +376,26 @@ main(){
   fi
 
   #
+  # Install npm global packages
+  #============================
+
+  FAILED_NPMS=()
+
+  local total_npms=${#NPM_GLOBALS[@]}
+
+  if [[ ${total_npms} -gt 0 ]]; then
+    echo
+    echo_blue "=========================================="
+    echo_blue " Installing ${total_npms} npm Global Package(s)"
+    echo_blue "=========================================="
+    echo
+
+    for pkg in "${NPM_GLOBALS[@]}"; do
+      install_npm_global "${pkg}"
+    done
+  fi
+
+  #
   # Summary
   #============================
 
@@ -367,12 +422,21 @@ main(){
     fi
   fi
 
+  if [[ ${#FAILED_NPMS[@]} -eq 0 && ${total_npms} -gt 0 ]]; then
+    echo_green " All ${total_npms} npm global package(s) installed successfully!"
+  elif [[ ${#FAILED_NPMS[@]} -gt 0 ]]; then
+    echo_yellow " ${#FAILED_NPMS[@]} npm global package(s) failed to install:"
+    for pkg in "${FAILED_NPMS[@]}"; do
+      echo_red "   - ${pkg}"
+    done
+  fi
+
   echo_blue "=========================================="
   echo
   echo_green "Installed skills can be listed with: npx skills list --global"
 
-  # Exit with failure if any skills or MCPs failed
-  if [[ ${#FAILED_SKILLS[@]} -gt 0 || ${#FAILED_MCPS[@]} -gt 0 ]]; then
+  # Exit with failure if any skills, MCPs, or npm packages failed
+  if [[ ${#FAILED_SKILLS[@]} -gt 0 || ${#FAILED_MCPS[@]} -gt 0 || ${#FAILED_NPMS[@]} -gt 0 ]]; then
     exit 1
   fi
 

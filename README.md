@@ -2,7 +2,7 @@
 
 Batch installs agent skills locally from [skills.sh](https://skills.sh).
 
-The `install-skills.sh` script uses `npx skills add` to install every skill defined in its built-in registry in a single run. Skills are installed globally (`--global`) for **claude-code** and **antigravity** agents. It also installs any required MCP servers via the `claude` CLI.
+The `install-skills.sh` script uses `npx skills add` to install every skill defined in its built-in registry in a single run. Skills are installed globally (`--global`) for **claude-code** and **antigravity** agents. It also installs any required MCP servers via the `claude` CLI and npm global dependencies needed by certain skills.
 
 > **Note:** codex and gemini are universal agents and are already handled by `skills.sh` — no extra steps needed.
 
@@ -88,6 +88,14 @@ If any skills or MCP servers fail, the summary lists them and the script exits w
 | Diagrams | `excalidraw` | ooiyeefei/ccc |
 | Documentation | `context7` | intellectronica/agent-skills |
 | Writing | `humanizer` | davila7/claude-code-templates |
+
+## npm Global Dependencies
+
+Some skills require globally installed npm packages. These are installed automatically via `npm install -g`.
+
+| Package | Required by |
+|---|---|
+| `@mermaid-js/mermaid-cli` | mermaid-diagrams |
 
 ## Adding or Removing Skills
 
