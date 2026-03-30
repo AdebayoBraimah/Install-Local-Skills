@@ -7,7 +7,6 @@
 # NOTE: codex and gemini are universal and already handled.
 
 # TODO:
-#  - Add excalidraw: https://github.com/ooiyeefei/ccc/tree/main/skills/excalidraw
 #  - Install mermaid-cli globally (npm install -g @mermaid-js/mermaid-cli) for mermaid-diagrams skill
 
 # =========================================================================
@@ -50,6 +49,9 @@ SKILLS=(
 
   # --- Writing ---
   "davila7/claude-code-templates"                                               "humanizer"
+
+  # --- Diagrams ---
+  "ooiyeefei/ccc"                                                               "excalidraw"
 )
 
 
