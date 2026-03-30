@@ -39,7 +39,7 @@ Running the script prints a progress banner, per-skill status, and a final summa
 
 ```
 ==========================================
- Installing 17 Agent Skills
+ Installing 16 Agent Skills
  Agents: claude-code, antigravity
 ==========================================
 
@@ -52,8 +52,7 @@ Installing: find-skills  (from vercel-labs/skills)
 ...
 
 ==========================================
- All 17 skills installed successfully!
- All 1 MCP server(s) installed successfully!
+ All 16 skills installed successfully!
 ==========================================
 
 Installed skills can be listed with: npx skills list --global
@@ -66,8 +65,6 @@ If any skills or MCP servers fail, the summary lists them and the script exits w
  2 skill(s) failed to install:
    - deep-research
    - ntfy-notify
- 1 MCP server(s) failed to install:
-   - sequential-thinking
 ==========================================
 ```
 
@@ -91,18 +88,6 @@ If any skills or MCP servers fail, the summary lists them and the script exits w
 | Productivity | `gsd` | ctsstc/get-shit-done-skills |
 | Documentation | `context7` | intellectronica/agent-skills |
 | Writing | `humanizer` | davila7/claude-code-templates |
-| Reasoning | `sequential-thinking` | mrgoonie/claudekit-skills |
-
-## Required MCP Servers
-
-Some skills depend on MCP servers. These are installed automatically via `claude mcp add` when the `claude` CLI is available.
-
-| MCP Server | Scope | Package |
-|---|---|---|
-| `sequential-thinking` | user | @modelcontextprotocol/server-sequential-thinking |
-
-> If the `claude` CLI is not found, MCP installation is skipped with a warning.
-
 ## Adding or Removing Skills
 
 Edit the `SKILLS` array at the top of `install-skills.sh`. Each skill is a pair of lines — a repo and a skill name:

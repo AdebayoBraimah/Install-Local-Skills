@@ -54,9 +54,6 @@ SKILLS=(
 
   # --- Writing ---
   "davila7/claude-code-templates"                                               "humanizer"
-
-  # --- Reasoning ---
-  "mrgoonie/claudekit-skills"                                                   "sequential-thinking"
 )
 
 
@@ -70,8 +67,6 @@ SKILLS=(
 # =========================================================================
 
 MCP_SERVERS=(
-  # --- Reasoning ---
-  "sequential-thinking"  "user"  "npx -y @modelcontextprotocol/server-sequential-thinking"
 )
 
 
