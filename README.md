@@ -109,7 +109,7 @@ Plugins extend Claude Code with additional capabilities beyond skills. They are 
 |---|---|---|
 | `codex` | openai-codex | openai/codex-plugin-cc |
 
-> **Note:** After installation, run `/codex:setup` inside Claude Code to complete Codex authentication. You will also need a [ChatGPT subscription or OpenAI API key](https://developers.openai.com/codex/pricing).
+> **Note:** After installation, run `/codex:setup` inside Claude Code to verify Codex CLI readiness and complete authentication. Use `/codex:setup --enable-review-gate` to enable a stop-time review gate that requires Codex to review your changes before Claude Code completes a task. You will also need a [ChatGPT subscription or OpenAI API key](https://developers.openai.com/codex/pricing).
 
 ## npm Global Dependencies
 

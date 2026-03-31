@@ -158,6 +158,18 @@ Usage(){
 
         npx skills add https://github.com/vercel-labs/skills --skill find-skills
 
+  Post-install setup:
+
+      After installation, run /codex:setup inside Claude
+      Code to verify Codex CLI readiness and authentication.
+
+        /codex:setup
+        /codex:setup --enable-review-gate
+
+      The optional --enable-review-gate flag enables a
+      stop-time review gate that requires Codex to review
+      your changes before Claude Code completes a task.
+
   Optional arguments:
       -h, -help, --help               Prints this help menu, then exits.
 
