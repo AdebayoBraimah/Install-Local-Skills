@@ -105,11 +105,14 @@ If any skills, MCP servers, npm packages, or plugins fail, the summary lists the
 
 Plugins extend Claude Code with additional capabilities beyond skills. They are installed via the `claude plugin` CLI.
 
-| Plugin | Marketplace | Source |
-|---|---|---|
-| `codex` | openai-codex | openai/codex-plugin-cc |
+| Plugin | Marketplace | Source | Description |
+|---|---|---|---|
+| `codex` | openai-codex | openai/codex-plugin-cc | Codex code review and task delegation |
+| `ccc-skills` | ccc | ooiyeefei/ccc | Skills collection (excalidraw, streak) |
 
-> **Note:** After installation, run `/codex:setup` inside Claude Code to verify Codex CLI readiness and complete authentication. Use `/codex:setup --enable-review-gate` to enable a stop-time review gate that requires Codex to review your changes before Claude Code completes a task. You will also need a [ChatGPT subscription or OpenAI API key](https://developers.openai.com/codex/pricing).
+> **Notes:**
+> - After installation, run `/codex:setup` inside Claude Code to verify Codex CLI readiness and complete authentication. Use `/codex:setup --enable-review-gate` to enable a stop-time review gate that requires Codex to review your changes before Claude Code completes a task. You will also need a [ChatGPT subscription or OpenAI API key](https://developers.openai.com/codex/pricing).
+> - The `ccc-skills` plugin installs the excalidraw diagram generator and the streak challenge tracker as Claude Code skills.
 
 ## npm Global Dependencies
 
