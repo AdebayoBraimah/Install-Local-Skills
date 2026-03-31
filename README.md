@@ -2,14 +2,23 @@
 
 Batch installs agent skills locally from [skills.sh](https://skills.sh).
 
-The `install-skills.sh` script uses `npx skills add` to install every skill defined in its built-in registry in a single run. Skills are installed globally (`--global`) for **claude-code** and **antigravity** agents. It also installs any required MCP servers via the `claude` CLI and npm global dependencies needed by certain skills.
+The `install-skills.sh` script uses `npx skills add` to install every skill defined in its built-in registry in a single run. Skills are installed globally (`--global`) for **claude-code** and **antigravity** agents. It also installs any required MCP servers, Claude Code plugins, and npm global dependencies via the `claude` CLI.
 
-> **Note:** codex and gemini are universal agents and are already handled by `skills.sh` — no extra steps needed.
+The script runs five installation phases in order:
+
+1. **Agent skills** — via `npx skills add`
+2. **Claude MCP servers** — via `claude mcp add`
+3. **Codex MCP servers** — via `codex mcp add` (same servers, shared registry)
+4. **npm global packages** — via `npm install -g`
+5. **Claude Code plugins** — via `claude plugin marketplace add` + `claude plugin install`
+
+> **Note:** Phase 1 requires `npx`. Phases 2 and 5 require the `claude` CLI. Phase 3 requires the `codex` CLI. Missing CLIs cause the corresponding phases to be skipped. codex and gemini are universal agents and are already handled by `skills.sh` — no extra steps needed.
 
 ## Prerequisites
 
 - [Node.js](https://nodejs.org/) (provides `npx`)
-- [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) (optional — required for MCP server installation)
+- [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) (optional — required for Claude MCP servers and plugin installation)
+- [Codex CLI](https://developers.openai.com/codex/cli/) (optional — required for Codex MCP server installation)
 - If this is your **first time** installing skills, run the interactive install once so that `npx` can set things up:
 
   ```bash
@@ -58,13 +67,15 @@ Installing: find-skills  (from vercel-labs/skills)
 Installed skills can be listed with: npx skills list --global
 ```
 
-If any skills or MCP servers fail, the summary lists them and the script exits with a non-zero status:
+If any skills, MCP servers, npm packages, or plugins fail, the summary lists them and the script exits with a non-zero status:
 
 ```
 ==========================================
  2 skill(s) failed to install:
    - deep-research
    - ntfy-notify
+ 1 Claude Code plugin(s) failed to install:
+   - codex@openai-codex
 ==========================================
 ```
 
@@ -90,13 +101,24 @@ If any skills or MCP servers fail, the summary lists them and the script exits w
 | Writing | `humanizer` | davila7/claude-code-templates |
 | CLI | `cli-anything` | hkuds/cli-anything |
 
+## Claude Code Plugins
+
+Plugins extend Claude Code with additional capabilities beyond skills. They are installed via the `claude plugin` CLI.
+
+| Plugin | Marketplace | Source |
+|---|---|---|
+| `codex` | openai-codex | openai/codex-plugin-cc |
+
+> **Note:** After installation, run `/codex:setup` inside Claude Code to complete Codex authentication. You will also need a [ChatGPT subscription or OpenAI API key](https://developers.openai.com/codex/pricing).
+
 ## npm Global Dependencies
 
-Some skills require globally installed npm packages. These are installed automatically via `npm install -g`.
+Some skills and plugins require globally installed npm packages. These are installed automatically via `npm install -g`.
 
 | Package | Required by |
 |---|---|
 | `@mermaid-js/mermaid-cli` | mermaid-diagrams |
+| `@openai/codex` | codex plugin |
 
 
 ## Adding or Removing Skills
@@ -111,6 +133,18 @@ SKILLS=(
 ```
 
 To **add** a skill, append a new repo/name pair. To **remove** one, delete both lines.
+
+## Adding or Removing Plugins
+
+Edit the `PLUGINS` array at the top of `install-skills.sh`. Each plugin is a triplet — a marketplace source, a plugin identifier, and a marketplace name:
+
+```bash
+PLUGINS=(
+  "owner/repo"    "plugin@marketplace"    "marketplace-name"
+)
+```
+
+To **add** a plugin, append a new triplet. To **remove** one, delete all three values.
 
 ## Updating the Script
 
