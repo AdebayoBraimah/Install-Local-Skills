@@ -79,6 +79,30 @@ MCP_SERVERS=(
 NPM_GLOBALS=(
   # --- Diagrams (required by mermaid-diagrams skill) ---
   "@mermaid-js/mermaid-cli"
+
+  # --- Codex (required by codex plugin) ---
+  "@openai/codex"
+)
+
+
+# =========================================================================
+#
+# Claude Code plugins registry
+#
+#   Each entry is a triplet:
+#     <marketplace-source>  <plugin-id>  <marketplace-name>
+#
+#   marketplace-source: GitHub owner/repo or URL for the marketplace
+#   plugin-id:          Plugin identifier to install (plugin@marketplace)
+#   marketplace-name:   Name the marketplace is registered under
+#
+#   The marketplace is added first, then the plugin is installed from it.
+#
+# =========================================================================
+
+PLUGINS=(
+  # --- Codex ---
+  "openai/codex-plugin-cc"    "codex@openai-codex"    "openai-codex"
 )
 
 
@@ -110,8 +134,9 @@ Usage(){
       globally (--global) for the agents: claude-code and
       antigravity.
 
-      Also installs required MCP servers via the claude CLI
-      when available.
+      Also installs required MCP servers, Claude Code
+      plugins, and npm global dependencies via the claude
+      CLI when available.
 
       NOTE:
       - codex and gemini are universal and already handled.
@@ -260,6 +285,42 @@ install_mcp(){
 
 
 #######################################
+# Installs a single Claude Code plugin.
+#   Adds the marketplace (if not already
+#   present) then installs the plugin.
+# Arguments:
+#   source:    Marketplace source (owner/repo or URL)
+#   plugin_id: Plugin identifier (plugin@marketplace)
+#   mkt_name:  Marketplace name
+# Globals:
+#   FAILED_PLUGINS (appended on failure)
+#######################################
+install_plugin(){
+  local source="${1}"
+  local plugin_id="${2}"
+  local mkt_name="${3}"
+
+  echo_blue "Adding marketplace: ${mkt_name}  (from ${source})"
+
+  if ! claude plugin marketplace add "${source}" 2>/dev/null; then
+    # Marketplace may already exist — continue to install
+    echo_yellow "  -> Marketplace ${mkt_name} may already be added, continuing..."
+  fi
+
+  echo_blue "Installing plugin: ${plugin_id}"
+
+  if claude plugin install "${plugin_id}"; then
+    echo_green "  -> Plugin ${plugin_id} installed successfully"
+  else
+    echo_red "  -> Failed to install plugin ${plugin_id}"
+    FAILED_PLUGINS+=("${plugin_id}")
+  fi
+
+  echo
+}
+
+
+#######################################
 # Installs a single npm package globally
 #   using npm install -g.
 # Arguments:
@@ -324,8 +385,8 @@ main(){
   fi
 
   if ! command -v claude &>/dev/null; then
-    echo_yellow "claude CLI not found — skipping MCP server installation."
-    local skip_mcp=true
+    echo_yellow "claude CLI not found — skipping MCP server and plugin installation."
+    local skip_claude=true
   fi
 
   #
@@ -360,7 +421,7 @@ main(){
 
   local total_mcps=$(( ${#MCP_SERVERS[@]} / 3 ))
 
-  if [[ "${skip_mcp}" != true && ${total_mcps} -gt 0 ]]; then
+  if [[ "${skip_claude}" != true && ${total_mcps} -gt 0 ]]; then
     echo
     echo_blue "=========================================="
     echo_blue " Installing ${total_mcps} MCP Server(s)"
@@ -399,6 +460,32 @@ main(){
   fi
 
   #
+  # Install Claude Code plugins
+  #============================
+
+  FAILED_PLUGINS=()
+
+  local total_plugins=$(( ${#PLUGINS[@]} / 3 ))
+
+  if [[ "${skip_claude}" != true && ${total_plugins} -gt 0 ]]; then
+    echo
+    echo_blue "=========================================="
+    echo_blue " Installing ${total_plugins} Claude Code Plugin(s)"
+    echo_blue "=========================================="
+    echo
+
+    local k=0
+    while [[ ${k} -lt ${#PLUGINS[@]} ]]; do
+      local plugin_source="${PLUGINS[${k}]}"
+      local plugin_id="${PLUGINS[$(( k + 1 ))]}"
+      local mkt_name="${PLUGINS[$(( k + 2 ))]}"
+      k=$(( k + 3 ))
+
+      install_plugin "${plugin_source}" "${plugin_id}" "${mkt_name}"
+    done
+  fi
+
+  #
   # Summary
   #============================
 
@@ -414,7 +501,7 @@ main(){
     done
   fi
 
-  if [[ "${skip_mcp}" != true ]]; then
+  if [[ "${skip_claude}" != true ]]; then
     if [[ ${#FAILED_MCPS[@]} -eq 0 ]]; then
       echo_green " All ${total_mcps} MCP server(s) installed successfully!"
     else
@@ -434,12 +521,23 @@ main(){
     done
   fi
 
+  if [[ "${skip_claude}" != true ]]; then
+    if [[ ${#FAILED_PLUGINS[@]} -eq 0 && ${total_plugins} -gt 0 ]]; then
+      echo_green " All ${total_plugins} Claude Code plugin(s) installed successfully!"
+    elif [[ ${#FAILED_PLUGINS[@]} -gt 0 ]]; then
+      echo_yellow " ${#FAILED_PLUGINS[@]} Claude Code plugin(s) failed to install:"
+      for plugin in "${FAILED_PLUGINS[@]}"; do
+        echo_red "   - ${plugin}"
+      done
+    fi
+  fi
+
   echo_blue "=========================================="
   echo
   echo_green "Installed skills can be listed with: npx skills list --global"
 
-  # Exit with failure if any skills, MCPs, or npm packages failed
-  if [[ ${#FAILED_SKILLS[@]} -gt 0 || ${#FAILED_MCPS[@]} -gt 0 || ${#FAILED_NPMS[@]} -gt 0 ]]; then
+  # Exit with failure if any skills, MCPs, npm packages, or plugins failed
+  if [[ ${#FAILED_SKILLS[@]} -gt 0 || ${#FAILED_MCPS[@]} -gt 0 || ${#FAILED_NPMS[@]} -gt 0 || ${#FAILED_PLUGINS[@]} -gt 0 ]]; then
     exit 1
   fi
 
