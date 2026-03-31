@@ -104,6 +104,9 @@ NPM_GLOBALS=(
 PLUGINS=(
   # --- Codex ---
   "openai/codex-plugin-cc"    "codex@openai-codex"    "openai-codex"
+
+  # --- Diagrams ---
+  "ooiyeefei/ccc"             "ccc-skills@ccc"        "ccc"
 )
 
 
