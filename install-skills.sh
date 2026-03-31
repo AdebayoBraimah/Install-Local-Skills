@@ -57,10 +57,11 @@ SKILLS=(
 
 # =========================================================================
 #
-# MCP servers registry
+# MCP servers registry (shared by Claude and Codex)
 #
 #   Each entry is a triplet: <name> <scope> <command...>
 #   The command portion may contain multiple tokens.
+#   Scope is used by claude mcp add and ignored by codex mcp add.
 #
 # =========================================================================
 
@@ -137,6 +138,18 @@ Usage(){
       Also installs required MCP servers, Claude Code
       plugins, and npm global dependencies via the claude
       CLI when available.
+
+      The script runs five installation phases in order:
+
+        1. Agent skills      (via npx skills add)
+        2. Claude MCP servers(via claude mcp add)
+        3. Codex MCP servers (via codex mcp add)
+        4. npm packages      (via npm install -g)
+        5. Claude plugins    (via claude plugin install)
+
+      Phase 1 requires npx. Phases 2 and 5 require the
+      claude CLI. Phase 3 requires the codex CLI. Missing
+      CLIs cause the corresponding phases to be skipped.
 
       NOTE:
       - codex and gemini are universal and already handled.
@@ -285,6 +298,35 @@ install_mcp(){
 
 
 #######################################
+# Installs a single MCP server for
+#   Codex using codex mcp add.
+#   Scope is ignored (codex has no scope).
+# Arguments:
+#   name:  MCP server name
+#   scope: (ignored — kept for array compat)
+#   cmd:   Command to run the server
+# Globals:
+#   FAILED_CODEX_MCPS (appended on failure)
+#######################################
+install_codex_mcp(){
+  local name="${1}"
+  local scope="${2}"  # ignored — codex mcp add has no scope
+  local cmd="${3}"
+
+  echo_blue "Installing Codex MCP: ${name}"
+
+  if codex mcp add "${name}" -- ${cmd}; then
+    echo_green "  -> Codex MCP ${name} installed successfully"
+  else
+    echo_red "  -> Failed to install Codex MCP ${name}"
+    FAILED_CODEX_MCPS+=("${name}")
+  fi
+
+  echo
+}
+
+
+#######################################
 # Installs a single Claude Code plugin.
 #   Adds the marketplace (if not already
 #   present) then installs the plugin.
@@ -385,8 +427,13 @@ main(){
   fi
 
   if ! command -v claude &>/dev/null; then
-    echo_yellow "claude CLI not found — skipping MCP server and plugin installation."
+    echo_yellow "claude CLI not found — skipping Claude MCP server and plugin installation."
     local skip_claude=true
+  fi
+
+  if ! command -v codex &>/dev/null; then
+    echo_yellow "codex CLI not found — skipping Codex MCP server installation."
+    local skip_codex=true
   fi
 
   #
@@ -414,7 +461,7 @@ main(){
   done
 
   #
-  # Install MCP servers
+  # Install MCP servers (Claude)
   #============================
 
   FAILED_MCPS=()
@@ -424,7 +471,7 @@ main(){
   if [[ "${skip_claude}" != true && ${total_mcps} -gt 0 ]]; then
     echo
     echo_blue "=========================================="
-    echo_blue " Installing ${total_mcps} MCP Server(s)"
+    echo_blue " Installing ${total_mcps} Claude MCP Server(s)"
     echo_blue "=========================================="
     echo
 
@@ -436,6 +483,30 @@ main(){
       j=$(( j + 3 ))
 
       install_mcp "${mcp_name}" "${mcp_scope}" "${mcp_cmd}"
+    done
+  fi
+
+  #
+  # Install MCP servers (Codex)
+  #============================
+
+  FAILED_CODEX_MCPS=()
+
+  if [[ "${skip_codex}" != true && ${total_mcps} -gt 0 ]]; then
+    echo
+    echo_blue "=========================================="
+    echo_blue " Installing ${total_mcps} Codex MCP Server(s)"
+    echo_blue "=========================================="
+    echo
+
+    local j=0
+    while [[ ${j} -lt ${#MCP_SERVERS[@]} ]]; do
+      local mcp_name="${MCP_SERVERS[${j}]}"
+      local mcp_scope="${MCP_SERVERS[$(( j + 1 ))]}"
+      local mcp_cmd="${MCP_SERVERS[$(( j + 2 ))]}"
+      j=$(( j + 3 ))
+
+      install_codex_mcp "${mcp_name}" "${mcp_scope}" "${mcp_cmd}"
     done
   fi
 
@@ -501,12 +572,23 @@ main(){
     done
   fi
 
-  if [[ "${skip_claude}" != true ]]; then
+  if [[ "${skip_claude}" != true && ${total_mcps} -gt 0 ]]; then
     if [[ ${#FAILED_MCPS[@]} -eq 0 ]]; then
-      echo_green " All ${total_mcps} MCP server(s) installed successfully!"
+      echo_green " All ${total_mcps} Claude MCP server(s) installed successfully!"
     else
-      echo_yellow " ${#FAILED_MCPS[@]} MCP server(s) failed to install:"
+      echo_yellow " ${#FAILED_MCPS[@]} Claude MCP server(s) failed to install:"
       for mcp in "${FAILED_MCPS[@]}"; do
+        echo_red "   - ${mcp}"
+      done
+    fi
+  fi
+
+  if [[ "${skip_codex}" != true && ${total_mcps} -gt 0 ]]; then
+    if [[ ${#FAILED_CODEX_MCPS[@]} -eq 0 ]]; then
+      echo_green " All ${total_mcps} Codex MCP server(s) installed successfully!"
+    else
+      echo_yellow " ${#FAILED_CODEX_MCPS[@]} Codex MCP server(s) failed to install:"
+      for mcp in "${FAILED_CODEX_MCPS[@]}"; do
         echo_red "   - ${mcp}"
       done
     fi
@@ -537,7 +619,7 @@ main(){
   echo_green "Installed skills can be listed with: npx skills list --global"
 
   # Exit with failure if any skills, MCPs, npm packages, or plugins failed
-  if [[ ${#FAILED_SKILLS[@]} -gt 0 || ${#FAILED_MCPS[@]} -gt 0 || ${#FAILED_NPMS[@]} -gt 0 || ${#FAILED_PLUGINS[@]} -gt 0 ]]; then
+  if [[ ${#FAILED_SKILLS[@]} -gt 0 || ${#FAILED_MCPS[@]} -gt 0 || ${#FAILED_CODEX_MCPS[@]} -gt 0 || ${#FAILED_NPMS[@]} -gt 0 || ${#FAILED_PLUGINS[@]} -gt 0 ]]; then
     exit 1
   fi
 
