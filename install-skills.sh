@@ -122,6 +122,9 @@ PLUGINS=(
 LOCAL_SKILLS=(
   # --- Research ---
   "https://github.com/teng-lin/notebooklm-py.git"                                "notebooklm"
+
+  # --- Diagrams ---
+  "https://github.com/bahayonghang/drawio-skills.git"                             "drawio"
 )
 
 

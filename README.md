@@ -135,6 +135,7 @@ These skills are only installed when the `--local` flag is passed. They may have
 | Category | Skill | Source |
 |---|---|---|
 | Research | `notebooklm` | teng-lin/notebooklm-py |
+| Diagrams | `drawio` | bahayonghang/drawio-skills |
 
 ### pip Dependencies (local)
 
