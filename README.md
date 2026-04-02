@@ -20,6 +20,7 @@ The script runs five installation phases in order:
 - [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) (optional — required for Claude MCP servers and plugin installation)
 - [Codex CLI](https://developers.openai.com/codex/cli/) (optional — required for Codex MCP server installation)
 - [Python pip](https://pip.pypa.io/) (optional — required for `--local` pip package installation)
+- [draw.io Desktop](https://github.com/jgraph/drawio-desktop) (optional — required for the `drawio` local skill)
 - If this is your **first time** installing skills, run the interactive install once so that `npx` can set things up:
 
   ```bash
@@ -153,6 +154,7 @@ Local skills may require Python packages. These are installed automatically via 
 >   notebooklm login
 >   ```
 > - See the [notebooklm-py documentation](https://github.com/teng-lin/notebooklm-py?tab=readme-ov-file) for full usage details.
+> - The `drawio` skill requires the [draw.io Desktop](https://github.com/jgraph/drawio-desktop) application to be installed.
 
 ## Adding or Removing Skills
 
