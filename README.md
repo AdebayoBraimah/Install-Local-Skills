@@ -145,7 +145,13 @@ Local skills may require Python packages. These are installed automatically via 
 | `notebooklm-py[browser]` | notebooklm |
 | `playwright` | notebooklm |
 
-> **Note:** After `playwright` is installed, `playwright install chromium` is run automatically to download the Chromium browser binary.
+> **Notes:**
+> - After `playwright` is installed, `playwright install chromium` is run automatically to download the Chromium browser binary.
+> - After installation, authenticate with NotebookLM (first time only, opens browser):
+>   ```bash
+>   notebooklm login
+>   ```
+> - See the [notebooklm-py documentation](https://github.com/teng-lin/notebooklm-py?tab=readme-ov-file) for full usage details.
 
 ## Adding or Removing Skills
 
