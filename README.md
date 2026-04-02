@@ -19,6 +19,7 @@ The script runs five installation phases in order:
 - [Node.js](https://nodejs.org/) (provides `npx`)
 - [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) (optional — required for Claude MCP servers and plugin installation)
 - [Codex CLI](https://developers.openai.com/codex/cli/) (optional — required for Codex MCP server installation)
+- [Python pip](https://pip.pypa.io/) (optional — required for `--local` pip package installation)
 - If this is your **first time** installing skills, run the interactive install once so that `npx` can set things up:
 
   ```bash
@@ -37,6 +38,9 @@ chmod +x install-skills.sh
 
 # Install all skills
 ./install-skills.sh
+
+# Install all skills including local-only skills
+./install-skills.sh --local
 
 # Print the help menu
 ./install-skills.sh --help
@@ -123,6 +127,25 @@ Some skills and plugins require globally installed npm packages. These are insta
 | `@mermaid-js/mermaid-cli` | mermaid-diagrams |
 | `@openai/codex` | codex plugin |
 
+
+## Local-Only Skills (`--local`)
+
+These skills are only installed when the `--local` flag is passed. They may have additional dependencies (e.g. Python packages) that are not needed by the default skill set.
+
+| Category | Skill | Source |
+|---|---|---|
+| Research | `notebooklm` | teng-lin/notebooklm-py |
+
+### pip Dependencies (local)
+
+Local skills may require Python packages. These are installed automatically via `pip install` when `--local` is used.
+
+| Package | Required by |
+|---|---|
+| `notebooklm-py[browser]` | notebooklm |
+| `playwright` | notebooklm |
+
+> **Note:** After `playwright` is installed, `playwright install chromium` is run automatically to download the Chromium browser binary.
 
 ## Adding or Removing Skills
 
