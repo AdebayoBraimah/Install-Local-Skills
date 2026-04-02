@@ -210,6 +210,11 @@ Usage(){
       stop-time review gate that requires Codex to review
       your changes before Claude Code completes a task.
 
+      When --local is used, authenticate with NotebookLM
+      (first time only, opens browser):
+
+        notebooklm login
+
   Optional arguments:
       -h, -help, --help               Prints this help menu, then exits.
       --local                         Also install local-only skills and
