@@ -112,6 +112,37 @@ PLUGINS=(
 
 # =========================================================================
 #
+# Local-only skills registry (installed with --local)
+#
+#   Same pair format as SKILLS: <repo> followed by <skill-name>.
+#   These are only installed when the --local flag is passed.
+#
+# =========================================================================
+
+LOCAL_SKILLS=(
+  # --- Research ---
+  "https://github.com/teng-lin/notebooklm-py.git"                                "notebooklm"
+)
+
+
+# =========================================================================
+#
+# Local-only pip packages (installed with --local)
+#
+#   Each entry is a single pip package name to install.
+#   These are only installed when the --local flag is passed.
+#
+# =========================================================================
+
+LOCAL_PIP_PACKAGES=(
+  # --- NotebookLM dependencies ---
+  "notebooklm-py[browser]"
+  "playwright"
+)
+
+
+# =========================================================================
+#
 # Helper functions
 #
 # =========================================================================
@@ -150,9 +181,15 @@ Usage(){
         4. npm packages      (via npm install -g)
         5. Claude plugins    (via claude plugin install)
 
+      When --local is passed, two additional phases run:
+
+        *  Local agent skills (via npx skills add)
+        *  Local pip packages (via pip install)
+
       Phase 1 requires npx. Phases 2 and 5 require the
-      claude CLI. Phase 3 requires the codex CLI. Missing
-      CLIs cause the corresponding phases to be skipped.
+      claude CLI. Phase 3 requires the codex CLI. Local
+      pip packages require pip. Missing CLIs cause the
+      corresponding phases to be skipped.
 
       NOTE:
       - codex and gemini are universal and already handled.
@@ -175,11 +212,16 @@ Usage(){
 
   Optional arguments:
       -h, -help, --help               Prints this help menu, then exits.
+      --local                         Also install local-only skills and
+                                      their pip dependencies.
 
   Example usage:
 
       # Install all skills
       $(basename ${0})
+
+      # Install all skills including local-only skills
+      $(basename ${0}) --local
 
       # Print this help menu
       $(basename ${0}) --help
@@ -401,6 +443,41 @@ install_npm_global(){
 }
 
 
+#######################################
+# Installs a single pip package using
+#   pip install.
+# Arguments:
+#   pkg: pip package name
+# Globals:
+#   FAILED_PIPS (appended on failure)
+#######################################
+install_pip_package(){
+  local pkg="${1}"
+
+  echo_blue "Installing pip package: ${pkg}"
+
+  if pip install "${pkg}"; then
+    echo_green "  -> ${pkg} installed successfully"
+
+    # playwright requires a post-install step to download Chromium
+    if [[ "${pkg}" == "playwright" ]]; then
+      echo_blue "  -> Running playwright install chromium..."
+      if playwright install chromium; then
+        echo_green "  -> Playwright Chromium installed successfully"
+      else
+        echo_red "  -> Failed to install Playwright Chromium"
+        FAILED_PIPS+=("${pkg} (chromium)")
+      fi
+    fi
+  else
+    echo_red "  -> Failed to install ${pkg}"
+    FAILED_PIPS+=("${pkg}")
+  fi
+
+  echo
+}
+
+
 # =========================================================================
 #
 # Main function
@@ -424,9 +501,12 @@ main(){
   # Parse arguments
   #============================
 
+  local install_local=false
+
   while [[ ${#} -gt 0 ]]; do
     case "${1}" in
       -h|-help|--help) Usage; ;;
+      --local) install_local=true ;;
       -*) echo_red "$(basename ${0}): Unrecognized option ${1}" >&2; Usage; ;;
       *) break ;;
     esac
@@ -449,6 +529,16 @@ main(){
   if ! command -v codex &>/dev/null; then
     echo_yellow "codex CLI not found — skipping Codex MCP server installation."
     local skip_codex=true
+  fi
+
+  if [[ "${install_local}" == true ]]; then
+    if ! command -v pip &>/dev/null; then
+      echo_yellow "pip not found — skipping local pip package installation."
+      local skip_pip=true
+    fi
+
+    # Merge local skills into main skills array
+    SKILLS+=("${LOCAL_SKILLS[@]}")
   fi
 
   #
@@ -546,6 +636,26 @@ main(){
   fi
 
   #
+  # Install local pip packages (--local only)
+  #============================
+
+  FAILED_PIPS=()
+
+  local total_pips=${#LOCAL_PIP_PACKAGES[@]}
+
+  if [[ "${install_local}" == true && "${skip_pip}" != true && ${total_pips} -gt 0 ]]; then
+    echo
+    echo_blue "=========================================="
+    echo_blue " Installing ${total_pips} pip Package(s) (local)"
+    echo_blue "=========================================="
+    echo
+
+    for pkg in "${LOCAL_PIP_PACKAGES[@]}"; do
+      install_pip_package "${pkg}"
+    done
+  fi
+
+  #
   # Install Claude Code plugins
   #============================
 
@@ -618,6 +728,17 @@ main(){
     done
   fi
 
+  if [[ "${install_local}" == true && "${skip_pip}" != true && ${total_pips} -gt 0 ]]; then
+    if [[ ${#FAILED_PIPS[@]} -eq 0 ]]; then
+      echo_green " All ${total_pips} pip package(s) installed successfully!"
+    else
+      echo_yellow " ${#FAILED_PIPS[@]} pip package(s) failed to install:"
+      for pkg in "${FAILED_PIPS[@]}"; do
+        echo_red "   - ${pkg}"
+      done
+    fi
+  fi
+
   if [[ "${skip_claude}" != true ]]; then
     if [[ ${#FAILED_PLUGINS[@]} -eq 0 && ${total_plugins} -gt 0 ]]; then
       echo_green " All ${total_plugins} Claude Code plugin(s) installed successfully!"
@@ -633,8 +754,8 @@ main(){
   echo
   echo_green "Installed skills can be listed with: npx skills list --global"
 
-  # Exit with failure if any skills, MCPs, npm packages, or plugins failed
-  if [[ ${#FAILED_SKILLS[@]} -gt 0 || ${#FAILED_MCPS[@]} -gt 0 || ${#FAILED_CODEX_MCPS[@]} -gt 0 || ${#FAILED_NPMS[@]} -gt 0 || ${#FAILED_PLUGINS[@]} -gt 0 ]]; then
+  # Exit with failure if any skills, MCPs, npm/pip packages, or plugins failed
+  if [[ ${#FAILED_SKILLS[@]} -gt 0 || ${#FAILED_MCPS[@]} -gt 0 || ${#FAILED_CODEX_MCPS[@]} -gt 0 || ${#FAILED_NPMS[@]} -gt 0 || ${#FAILED_PIPS[@]} -gt 0 || ${#FAILED_PLUGINS[@]} -gt 0 ]]; then
     exit 1
   fi
 
