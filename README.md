@@ -2,23 +2,24 @@
 
 Batch installs agent skills locally from [skills.sh](https://skills.sh).
 
-The `install-skills.sh` script uses `npx skills add` to install every skill defined in its built-in registry in a single run. Skills are installed globally (`--global`) for **claude-code** and **antigravity** agents. It also installs any required MCP servers, Claude Code plugins, and npm global dependencies via the `claude` CLI.
+The `install-skills.sh` script uses `npx skills add` to install every skill defined in its built-in registry in a single run. Skills are installed globally (`--global`) for **claude-code** and **antigravity** agents. It also installs any required MCP servers, Claude Code plugins, Codex plugins, and npm global dependencies.
 
-The script runs five installation phases in order:
+The script runs six installation phases in order:
 
 1. **Agent skills** — via `npx skills add`
 2. **Claude MCP servers** — via `claude mcp add`
 3. **Codex MCP servers** — via `codex mcp add` (same servers, shared registry)
 4. **npm global packages** — via `npm install -g`
 5. **Claude Code plugins** — via `claude plugin marketplace add` + `claude plugin install`
+6. **Codex plugins** — via shallow repo clone + `~/.codex/config.toml` enablement
 
-> **Note:** Phase 1 requires `npx`. Phases 2 and 5 require the `claude` CLI. Phase 3 requires the `codex` CLI. Missing CLIs cause the corresponding phases to be skipped. codex and gemini are universal agents and are already handled by `skills.sh` — no extra steps needed.
+> **Note:** Phase 1 requires `npx`. Phases 2 and 5 require the `claude` CLI. Phases 3 and 6 require the `codex` CLI. Missing CLIs cause the corresponding phases to be skipped. codex and gemini are universal agents and are already handled by `skills.sh` — no extra steps needed.
 
 ## Prerequisites
 
 - [Node.js](https://nodejs.org/) (provides `npx`)
 - [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) (optional — required for Claude MCP servers and plugin installation)
-- [Codex CLI](https://developers.openai.com/codex/cli/) (optional — required for Codex MCP server installation)
+- [Codex CLI](https://developers.openai.com/codex/cli/) (optional — required for Codex MCP server and plugin installation)
 - [Python pip](https://pip.pypa.io/) (optional — required for `--local` pip package installation)
 - [draw.io Desktop](https://github.com/jgraph/drawio-desktop) (optional — required for the `drawio` local skill)
 - If this is your **first time** installing skills, run the interactive install once so that `npx` can set things up:
@@ -76,11 +77,13 @@ If any skills, MCP servers, npm packages, or plugins fail, the summary lists the
 
 ```
 ==========================================
- 2 skill(s) failed to install:
+2 skill(s) failed to install:
    - deep-research
    - ntfy-notify
- 1 Claude Code plugin(s) failed to install:
+1 Claude Code plugin(s) failed to install:
    - codex@openai-codex
+1 Codex plugin(s) failed to install:
+   - github@openai-curated
 ==========================================
 ```
 
@@ -118,6 +121,22 @@ Plugins extend Claude Code with additional capabilities beyond skills. They are 
 > **Notes:**
 > - After installation, run `/codex:setup` inside Claude Code to verify Codex CLI readiness and complete authentication. Use `/codex:setup --enable-review-gate` to enable a stop-time review gate that requires Codex to review your changes before Claude Code completes a task. You will also need a [ChatGPT subscription or OpenAI API key](https://developers.openai.com/codex/pricing).
 > - The `ccc-skills` plugin installs the excalidraw diagram generator and the streak challenge tracker as Claude Code skills.
+
+## Codex Plugins
+
+Codex plugins are tracked separately from Claude Code plugins. The script installs them from the `CODEX_PLUGINS` registry by:
+
+1. cloning the source repo at shallow depth
+2. copying the plugin directory into `~/.codex/plugins/cache/<marketplace>/<plugin>/<commit-sha>/`
+3. enabling the plugin in `~/.codex/config.toml`
+
+The default Codex plugin registry currently includes:
+
+| Plugin | Marketplace | Source | Plugin Path |
+|---|---|---|---|
+| `github` | `openai-curated` | openai/plugins | `plugins/github` |
+
+> **Note:** The Codex CLI on this setup does not expose a `plugin install` command, so the installer uses Codex's local cache and config layout directly.
 
 ## npm Global Dependencies
 
@@ -180,6 +199,18 @@ PLUGINS=(
 ```
 
 To **add** a plugin, append a new triplet. To **remove** one, delete all three values.
+
+## Adding or Removing Codex Plugins
+
+Edit the `CODEX_PLUGINS` array at the top of `install-skills.sh`. Each Codex plugin is a quartet — a source repo, a plugin name, a marketplace name, and the plugin path inside the repo:
+
+```bash
+CODEX_PLUGINS=(
+  "owner/repo"  "plugin-name"  "marketplace-name"  "plugins/plugin-name"
+)
+```
+
+To **add** a Codex plugin, append a new quartet. To **remove** one, delete all four values.
 
 ## Updating the Script
 

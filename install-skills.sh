@@ -112,6 +112,32 @@ PLUGINS=(
 
 # =========================================================================
 #
+# Codex plugins registry
+#
+#   Each entry is a quartet:
+#     <source-repo>  <plugin-name>  <marketplace-name>  <plugin-path>
+#
+#   source-repo:      GitHub owner/repo or full git URL
+#   plugin-name:      Codex plugin identifier
+#   marketplace-name: Marketplace namespace used in Codex config
+#   plugin-path:      Path to the plugin directory inside the repo
+#
+#   The installer clones the repo, copies the plugin into:
+#     ~/.codex/plugins/cache/<marketplace>/<plugin>/<commit-sha>/
+#   and enables it in ~/.codex/config.toml as:
+#     [plugins."<plugin>@<marketplace>"]
+#     enabled = true
+#
+# =========================================================================
+
+CODEX_PLUGINS=(
+  # --- Official Codex plugins ---
+  "openai/plugins"            "github"                "openai-curated"   "plugins/github"
+)
+
+
+# =========================================================================
+#
 # Local-only skills registry (installed with --local)
 #
 #   Same pair format as SKILLS: <repo> followed by <skill-name>.
@@ -173,16 +199,17 @@ Usage(){
       antigravity.
 
       Also installs required MCP servers, Claude Code
-      plugins, and npm global dependencies via the claude
-      CLI when available.
+      plugins, Codex plugins, and npm global dependencies
+      when the required CLIs are available.
 
-      The script runs five installation phases in order:
+      The script runs six installation phases in order:
 
         1. Agent skills      (via npx skills add)
         2. Claude MCP servers(via claude mcp add)
         3. Codex MCP servers (via codex mcp add)
         4. npm packages      (via npm install -g)
         5. Claude plugins    (via claude plugin install)
+        6. Codex plugins     (via repo clone + Codex config)
 
       When --local is passed, two additional phases run:
 
@@ -190,9 +217,9 @@ Usage(){
         *  Local pip packages (via pip install)
 
       Phase 1 requires npx. Phases 2 and 5 require the
-      claude CLI. Phase 3 requires the codex CLI. Local
-      pip packages require pip. Missing CLIs cause the
-      corresponding phases to be skipped.
+      claude CLI. Phases 3 and 6 require the codex CLI.
+      Local pip packages require pip. Missing CLIs cause
+      the corresponding phases to be skipped.
 
       NOTE:
       - codex and gemini are universal and already handled.
@@ -428,6 +455,160 @@ install_plugin(){
 
 
 #######################################
+# Converts a GitHub owner/repo reference
+#   into a cloneable git URL.
+# Arguments:
+#   repo: GitHub owner/repo or full URL
+#######################################
+repo_to_git_url(){
+  local repo="${1}"
+
+  if [[ "${repo}" == *"://"* ]]; then
+    echo "${repo}"
+  else
+    echo "https://github.com/${repo}.git"
+  fi
+}
+
+
+#######################################
+# Enables a Codex plugin in
+#   ~/.codex/config.toml.
+# Arguments:
+#   plugin_key: plugin@marketplace key
+#######################################
+enable_codex_plugin(){
+  local plugin_key="${1}"
+  local config_dir="${HOME}/.codex"
+  local config_file="${config_dir}/config.toml"
+  local tmp_file
+
+  mkdir -p "${config_dir}"
+
+  if [[ ! -f "${config_file}" ]]; then
+    printf '[plugins."%s"]\nenabled = true\n' "${plugin_key}" > "${config_file}"
+    return 0
+  fi
+
+  tmp_file="$(mktemp)"
+
+  awk -v section="[plugins.\"${plugin_key}\"]" '
+    $0 == section {
+      print
+      in_section = 1
+      saw_section = 1
+      next
+    }
+
+    in_section && /^\[/ {
+      if (!updated_enabled) {
+        print "enabled = true"
+        updated_enabled = 1
+      }
+      in_section = 0
+    }
+
+    in_section && /^enabled[[:space:]]*=/ {
+      if (!updated_enabled) {
+        print "enabled = true"
+        updated_enabled = 1
+      }
+      next
+    }
+
+    { print }
+
+    END {
+      if (in_section && !updated_enabled) {
+        print "enabled = true"
+      }
+
+      if (!saw_section) {
+        if (NR > 0) {
+          print ""
+        }
+        print section
+        print "enabled = true"
+      }
+    }
+  ' "${config_file}" > "${tmp_file}" && mv "${tmp_file}" "${config_file}"
+}
+
+
+#######################################
+# Installs a single Codex plugin by
+#   cloning its source repo, copying the
+#   plugin into Codex's local cache, and
+#   enabling it in ~/.codex/config.toml.
+# Arguments:
+#   source_repo:      GitHub owner/repo or full URL
+#   plugin_name:      Codex plugin identifier
+#   marketplace_name: Codex marketplace namespace
+#   plugin_path:      Path to plugin directory inside repo
+# Globals:
+#   FAILED_CODEX_PLUGINS (appended on failure)
+#######################################
+install_codex_plugin(){
+  local source_repo="${1}"
+  local plugin_name="${2}"
+  local marketplace_name="${3}"
+  local plugin_path="${4}"
+  local clone_url
+  local tmp_dir
+  local commit_sha
+  local source_dir
+  local target_dir
+  local plugin_key="${plugin_name}@${marketplace_name}"
+
+  echo_blue "Installing Codex plugin: ${plugin_key}  (from ${source_repo})"
+
+  clone_url="$(repo_to_git_url "${source_repo}")"
+  tmp_dir="$(mktemp -d)"
+
+  if ! git clone --depth 1 "${clone_url}" "${tmp_dir}" >/dev/null 2>&1; then
+    echo_red "  -> Failed to clone ${source_repo}"
+    FAILED_CODEX_PLUGINS+=("${plugin_key}")
+    rm -rf "${tmp_dir}"
+    echo
+    return
+  fi
+
+  source_dir="${tmp_dir}/${plugin_path}"
+
+  if [[ ! -f "${source_dir}/.codex-plugin/plugin.json" ]]; then
+    echo_red "  -> Missing Codex plugin manifest at ${plugin_path}/.codex-plugin/plugin.json"
+    FAILED_CODEX_PLUGINS+=("${plugin_key}")
+    rm -rf "${tmp_dir}"
+    echo
+    return
+  fi
+
+  commit_sha="$(git -C "${tmp_dir}" rev-parse HEAD)"
+  target_dir="${HOME}/.codex/plugins/cache/${marketplace_name}/${plugin_name}/${commit_sha}"
+
+  mkdir -p "${target_dir}"
+
+  if ! cp -R "${source_dir}/." "${target_dir}/"; then
+    echo_red "  -> Failed to copy plugin files into Codex cache"
+    FAILED_CODEX_PLUGINS+=("${plugin_key}")
+    rm -rf "${tmp_dir}"
+    echo
+    return
+  fi
+
+  if enable_codex_plugin "${plugin_key}"; then
+    echo_green "  -> Codex plugin ${plugin_key} installed successfully"
+  else
+    echo_red "  -> Failed to enable Codex plugin ${plugin_key}"
+    FAILED_CODEX_PLUGINS+=("${plugin_key}")
+  fi
+
+  rm -rf "${tmp_dir}"
+  echo
+}
+
+
+#######################################
 # Installs a single npm package globally
 #   using npm install -g.
 # Arguments:
@@ -535,7 +716,7 @@ main(){
   fi
 
   if ! command -v codex &>/dev/null; then
-    echo_yellow "codex CLI not found — skipping Codex MCP server installation."
+    echo_yellow "codex CLI not found — skipping Codex MCP server and plugin installation."
     local skip_codex=true
   fi
 
@@ -690,6 +871,37 @@ main(){
   fi
 
   #
+  # Install Codex plugins
+  #============================
+
+  FAILED_CODEX_PLUGINS=()
+
+  local total_codex_plugins=$(( ${#CODEX_PLUGINS[@]} / 4 ))
+
+  if [[ "${skip_codex}" != true && ${total_codex_plugins} -gt 0 ]]; then
+    echo
+    echo_blue "=========================================="
+    echo_blue " Installing ${total_codex_plugins} Codex Plugin(s)"
+    echo_blue "=========================================="
+    echo
+
+    local l=0
+    while [[ ${l} -lt ${#CODEX_PLUGINS[@]} ]]; do
+      local codex_source_repo="${CODEX_PLUGINS[${l}]}"
+      local codex_plugin_name="${CODEX_PLUGINS[$(( l + 1 ))]}"
+      local codex_marketplace_name="${CODEX_PLUGINS[$(( l + 2 ))]}"
+      local codex_plugin_path="${CODEX_PLUGINS[$(( l + 3 ))]}"
+      l=$(( l + 4 ))
+
+      install_codex_plugin \
+        "${codex_source_repo}" \
+        "${codex_plugin_name}" \
+        "${codex_marketplace_name}" \
+        "${codex_plugin_path}"
+    done
+  fi
+
+  #
   # Summary
   #============================
 
@@ -758,12 +970,23 @@ main(){
     fi
   fi
 
+  if [[ "${skip_codex}" != true ]]; then
+    if [[ ${#FAILED_CODEX_PLUGINS[@]} -eq 0 && ${total_codex_plugins} -gt 0 ]]; then
+      echo_green " All ${total_codex_plugins} Codex plugin(s) installed successfully!"
+    elif [[ ${#FAILED_CODEX_PLUGINS[@]} -gt 0 ]]; then
+      echo_yellow " ${#FAILED_CODEX_PLUGINS[@]} Codex plugin(s) failed to install:"
+      for plugin in "${FAILED_CODEX_PLUGINS[@]}"; do
+        echo_red "   - ${plugin}"
+      done
+    fi
+  fi
+
   echo_blue "=========================================="
   echo
   echo_green "Installed skills can be listed with: npx skills list --global"
 
   # Exit with failure if any skills, MCPs, npm/pip packages, or plugins failed
-  if [[ ${#FAILED_SKILLS[@]} -gt 0 || ${#FAILED_MCPS[@]} -gt 0 || ${#FAILED_CODEX_MCPS[@]} -gt 0 || ${#FAILED_NPMS[@]} -gt 0 || ${#FAILED_PIPS[@]} -gt 0 || ${#FAILED_PLUGINS[@]} -gt 0 ]]; then
+  if [[ ${#FAILED_SKILLS[@]} -gt 0 || ${#FAILED_MCPS[@]} -gt 0 || ${#FAILED_CODEX_MCPS[@]} -gt 0 || ${#FAILED_NPMS[@]} -gt 0 || ${#FAILED_PIPS[@]} -gt 0 || ${#FAILED_PLUGINS[@]} -gt 0 || ${#FAILED_CODEX_PLUGINS[@]} -gt 0 ]]; then
     exit 1
   fi
 
