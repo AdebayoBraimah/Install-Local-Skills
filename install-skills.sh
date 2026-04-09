@@ -15,6 +15,9 @@
 #
 # =========================================================================
 
+# TODO:
+# - add GSD: npx skills add https://github.com/ctsstc/get-shit-done-skills --skill gsd
+
 SKILLS=(
   # --- Core / utility ---
   "anthropics/skills"                                                           "skill-creator"
