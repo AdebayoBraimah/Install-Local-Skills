@@ -17,6 +17,7 @@
 
 # TODO:
 # - add GSD: npx skills add https://github.com/ctsstc/get-shit-done-skills --skill gsd
+# - copy local skills: e.g. plan-review
 
 SKILLS=(
   # --- Core / utility ---
