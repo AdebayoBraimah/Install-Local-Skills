@@ -6,6 +6,9 @@
 # Target agents: claude-code, antigravity
 # NOTE: codex and gemini are universal and already handled.
 
+# Resolve the directory this script lives in (for local copy skills)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # =========================================================================
 #
 # Skills registry
@@ -14,10 +17,6 @@
 #   To add or remove a skill, simply edit this array.
 #
 # =========================================================================
-
-# TODO:
-# - add GSD: npx skills add https://github.com/ctsstc/get-shit-done-skills --skill gsd
-# - copy local skills: e.g. plan-review
 
 SKILLS=(
   # --- Core / utility ---
@@ -56,6 +55,9 @@ SKILLS=(
 
   # --- CLI ---
   "hkuds/cli-anything"                                                          "cli-anything"
+
+  # --- Project management ---
+  "https://github.com/ctsstc/get-shit-done-skills.git"                          "gsd"
 )
 
 
@@ -176,6 +178,26 @@ LOCAL_PIP_PACKAGES=(
 
 # =========================================================================
 #
+# Local copy skills registry (installed with --local)
+#
+#   Each entry is a pair: <source-path> followed by <skill-name>.
+#   These are local skill directories that are copied into
+#   ~/.agents/skills/<skill-name>/ and sym-linked to:
+#     - ~/.claude/skills/<skill-name>
+#     - ~/.gemini/antigravity/skills/<skill-name>
+#
+#   Only installed when the --local flag is passed.
+#
+# =========================================================================
+
+LOCAL_COPY_SKILLS=(
+  # --- Planning ---
+  "${SCRIPT_DIR}/skills/plan-review"                                            "plan-review"
+)
+
+
+# =========================================================================
+#
 # Helper functions
 #
 # =========================================================================
@@ -215,10 +237,11 @@ Usage(){
         5. Claude plugins    (via claude plugin install)
         6. Codex plugins     (via repo clone + Codex config)
 
-      When --local is passed, two additional phases run:
+      When --local is passed, three additional phases run:
 
         *  Local agent skills (via npx skills add)
         *  Local pip packages (via pip install)
+        *  Local copy skills (copy to ~/.agents/skills + symlink)
 
       Phase 1 requires npx. Phases 2 and 5 require the
       claude CLI. Phases 3 and 6 require the codex CLI.
@@ -671,6 +694,77 @@ install_pip_package(){
 }
 
 
+#######################################
+# Installs a local skill by copying it
+#   into ~/.agents/skills/ and creating
+#   symlinks in ~/.claude/skills/ and
+#   ~/.gemini/antigravity/skills/.
+# Arguments:
+#   source_path: Absolute path to the
+#                local skill directory
+#   skill_name:  Skill name (directory name)
+# Globals:
+#   FAILED_COPY_SKILLS (appended on failure)
+#######################################
+install_local_copy_skill(){
+  local source_path="${1}"
+  local skill_name="${2}"
+  local agents_dir="${HOME}/.agents/skills"
+  local target_dir="${agents_dir}/${skill_name}"
+  local claude_dir="${HOME}/.claude/skills"
+  local gemini_dir="${HOME}/.gemini/antigravity/skills"
+
+  echo_blue "Installing local skill: ${skill_name}  (from ${source_path})"
+
+  if [[ ! -d "${source_path}" ]]; then
+    echo_red "  -> Source directory not found: ${source_path}"
+    FAILED_COPY_SKILLS+=("${skill_name}")
+    echo
+    return
+  fi
+
+  # Copy skill to ~/.agents/skills/
+  mkdir -p "${agents_dir}"
+
+  if [[ -d "${target_dir}" ]]; then
+    echo_yellow "  -> Target exists, updating: ${target_dir}"
+    rm -rf "${target_dir}"
+  fi
+
+  if ! cp -R "${source_path}" "${target_dir}"; then
+    echo_red "  -> Failed to copy ${skill_name} to ${target_dir}"
+    FAILED_COPY_SKILLS+=("${skill_name}")
+    echo
+    return
+  fi
+
+  echo_green "  -> Copied to ${target_dir}"
+
+  # Create symlink in ~/.claude/skills/
+  mkdir -p "${claude_dir}"
+
+  if [[ -e "${claude_dir}/${skill_name}" || -L "${claude_dir}/${skill_name}" ]]; then
+    rm -rf "${claude_dir}/${skill_name}"
+  fi
+
+  ln -s "../../.agents/skills/${skill_name}" "${claude_dir}/${skill_name}"
+  echo_green "  -> Symlinked: ${claude_dir}/${skill_name}"
+
+  # Create symlink in ~/.gemini/antigravity/skills/
+  mkdir -p "${gemini_dir}"
+
+  if [[ -e "${gemini_dir}/${skill_name}" || -L "${gemini_dir}/${skill_name}" ]]; then
+    rm -rf "${gemini_dir}/${skill_name}"
+  fi
+
+  ln -s "../../../.agents/skills/${skill_name}" "${gemini_dir}/${skill_name}"
+  echo_green "  -> Symlinked: ${gemini_dir}/${skill_name}"
+
+  echo_green "  -> ${skill_name} installed successfully"
+  echo
+}
+
+
 # =========================================================================
 #
 # Main function
@@ -849,6 +943,31 @@ main(){
   fi
 
   #
+  # Install local copy skills (--local only)
+  #============================
+
+  FAILED_COPY_SKILLS=()
+
+  local total_copy_skills=$(( ${#LOCAL_COPY_SKILLS[@]} / 2 ))
+
+  if [[ "${install_local}" == true && ${total_copy_skills} -gt 0 ]]; then
+    echo
+    echo_blue "=========================================="
+    echo_blue " Installing ${total_copy_skills} Local Copy Skill(s)"
+    echo_blue "=========================================="
+    echo
+
+    local m=0
+    while [[ ${m} -lt ${#LOCAL_COPY_SKILLS[@]} ]]; do
+      local copy_source="${LOCAL_COPY_SKILLS[${m}]}"
+      local copy_skill="${LOCAL_COPY_SKILLS[$(( m + 1 ))]}"
+      m=$(( m + 2 ))
+
+      install_local_copy_skill "${copy_source}" "${copy_skill}"
+    done
+  fi
+
+  #
   # Install Claude Code plugins
   #============================
 
@@ -963,6 +1082,17 @@ main(){
     fi
   fi
 
+  if [[ "${install_local}" == true && ${total_copy_skills} -gt 0 ]]; then
+    if [[ ${#FAILED_COPY_SKILLS[@]} -eq 0 ]]; then
+      echo_green " All ${total_copy_skills} local copy skill(s) installed successfully!"
+    else
+      echo_yellow " ${#FAILED_COPY_SKILLS[@]} local copy skill(s) failed to install:"
+      for skill in "${FAILED_COPY_SKILLS[@]}"; do
+        echo_red "   - ${skill}"
+      done
+    fi
+  fi
+
   if [[ "${skip_claude}" != true ]]; then
     if [[ ${#FAILED_PLUGINS[@]} -eq 0 && ${total_plugins} -gt 0 ]]; then
       echo_green " All ${total_plugins} Claude Code plugin(s) installed successfully!"
@@ -990,7 +1120,7 @@ main(){
   echo_green "Installed skills can be listed with: npx skills list --global"
 
   # Exit with failure if any skills, MCPs, npm/pip packages, or plugins failed
-  if [[ ${#FAILED_SKILLS[@]} -gt 0 || ${#FAILED_MCPS[@]} -gt 0 || ${#FAILED_CODEX_MCPS[@]} -gt 0 || ${#FAILED_NPMS[@]} -gt 0 || ${#FAILED_PIPS[@]} -gt 0 || ${#FAILED_PLUGINS[@]} -gt 0 || ${#FAILED_CODEX_PLUGINS[@]} -gt 0 ]]; then
+  if [[ ${#FAILED_SKILLS[@]} -gt 0 || ${#FAILED_MCPS[@]} -gt 0 || ${#FAILED_CODEX_MCPS[@]} -gt 0 || ${#FAILED_NPMS[@]} -gt 0 || ${#FAILED_PIPS[@]} -gt 0 || ${#FAILED_COPY_SKILLS[@]} -gt 0 || ${#FAILED_PLUGINS[@]} -gt 0 || ${#FAILED_CODEX_PLUGINS[@]} -gt 0 ]]; then
     exit 1
   fi
 

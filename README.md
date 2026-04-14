@@ -4,16 +4,18 @@ Batch installs agent skills locally from [skills.sh](https://skills.sh).
 
 The `install-skills.sh` script uses `npx skills add` to install every skill defined in its built-in registry in a single run. Skills are installed globally (`--global`) for **claude-code** and **antigravity** agents. It also installs any required MCP servers, Claude Code plugins, Codex plugins, and npm global dependencies.
 
-The script runs six installation phases in order:
+The script runs eight installation phases in order:
 
 1. **Agent skills** — via `npx skills add`
 2. **Claude MCP servers** — via `claude mcp add`
 3. **Codex MCP servers** — via `codex mcp add` (same servers, shared registry)
 4. **npm global packages** — via `npm install -g`
-5. **Claude Code plugins** — via `claude plugin marketplace add` + `claude plugin install`
-6. **Codex plugins** — via shallow repo clone + `~/.codex/config.toml` enablement
+5. **Local pip packages** — via `pip install` (`--local` only)
+6. **Local copy skills** — copy to `~/.agents/skills/` + symlink (`--local` only)
+7. **Claude Code plugins** — via `claude plugin marketplace add` + `claude plugin install`
+8. **Codex plugins** — via shallow repo clone + `~/.codex/config.toml` enablement
 
-> **Note:** Phase 1 requires `npx`. Phases 2 and 5 require the `claude` CLI. Phases 3 and 6 require the `codex` CLI. Missing CLIs cause the corresponding phases to be skipped. codex and gemini are universal agents and are already handled by `skills.sh` — no extra steps needed.
+> **Note:** Phase 1 requires `npx`. Phases 2 and 7 require the `claude` CLI. Phases 3 and 8 require the `codex` CLI. Phase 5 requires `pip`. Missing CLIs cause the corresponding phases to be skipped. codex and gemini are universal agents and are already handled by `skills.sh` — no extra steps needed.
 
 ## Prerequisites
 
@@ -54,7 +56,7 @@ Running the script prints a progress banner, per-skill status, and a final summa
 
 ```
 ==========================================
- Installing 17 Agent Skills
+ Installing 18 Agent Skills
  Agents: claude-code, antigravity
 ==========================================
 
@@ -67,7 +69,7 @@ Installing: find-skills  (from vercel-labs/skills)
 ...
 
 ==========================================
- All 17 skills installed successfully!
+ All 18 skills installed successfully!
 ==========================================
 
 Installed skills can be listed with: npx skills list --global
@@ -108,6 +110,7 @@ If any skills, MCP servers, npm packages, or plugins fail, the summary lists the
 | Documentation | `context7` | intellectronica/agent-skills |
 | Writing | `humanizer` | davila7/claude-code-templates |
 | CLI | `cli-anything` | hkuds/cli-anything |
+| Project management | `gsd` | ctsstc/get-shit-done-skills |
 
 ## Claude Code Plugins
 
@@ -152,10 +155,22 @@ Some skills and plugins require globally installed npm packages. These are insta
 
 These skills are only installed when the `--local` flag is passed. They may have additional dependencies (e.g. Python packages) that are not needed by the default skill set.
 
+### Remote Skills
+
+Installed via `npx skills add` (same as standard skills, but only with `--local`).
+
 | Category | Skill | Source |
 |---|---|---|
 | Research | `notebooklm` | teng-lin/notebooklm-py |
 | Diagrams | `drawio` | bahayonghang/drawio-skills |
+
+### Local Copy Skills
+
+Skills bundled in the `skills/` directory of this repo. These are copied into `~/.agents/skills/` and symlinked to agent directories (`~/.claude/skills/`, `~/.gemini/antigravity/skills/`).
+
+| Category | Skill | Source |
+|---|---|---|
+| Planning | `plan-review` | `skills/plan-review/` |
 
 ### pip Dependencies (local)
 
@@ -211,6 +226,18 @@ CODEX_PLUGINS=(
 ```
 
 To **add** a Codex plugin, append a new quartet. To **remove** one, delete all four values.
+
+## Adding or Removing Local Copy Skills
+
+Edit the `LOCAL_COPY_SKILLS` array in `install-skills.sh`. Each entry is a pair — a source path and a skill name:
+
+```bash
+LOCAL_COPY_SKILLS=(
+  "${SCRIPT_DIR}/skills/my-skill"    "my-skill"
+)
+```
+
+Place the skill directory under `skills/` in this repo. The installer copies it to `~/.agents/skills/` and creates symlinks in `~/.claude/skills/` and `~/.gemini/antigravity/skills/`.
 
 ## Updating the Script
 
