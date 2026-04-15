@@ -168,9 +168,10 @@ Installed via `npx skills add` (same as standard skills, but only with `--local`
 
 Skills bundled in the `skills/` directory of this repo. These are copied into `~/.agents/skills/` and symlinked to agent directories (`~/.claude/skills/`, `~/.gemini/antigravity/skills/`).
 
-| Category | Skill | Source |
-|---|---|---|
-| Planning | `plan-review` | `skills/plan-review/` |
+| Category | Skill | Source | Description |
+|---|---|---|---|
+| Planning | `plan-review` | `skills/plan-review/` | Two-reviewer QA loop (Claude Code + Codex) with parallel/sequential modes |
+| Planning | `plan-review-cdx` | `skills/plan-review-cdx/` | Two-reviewer QA loop for Codex (spec + execution reviewers) |
 
 ### pip Dependencies (local)
 

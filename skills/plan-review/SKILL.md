@@ -14,8 +14,14 @@ Automated two-reviewer plan QA loop. Runs independent Claude Code and Codex revi
 
 ## Invocation
 
-- `/plan-review` — reviews the active plan (must be in plan mode)
-- `/plan-review path/to/plan.md` — reviews the plan at the given file path
+- `/plan-review` — reviews the active plan in parallel (must be in plan mode)
+- `/plan-review path/to/plan.md` — reviews the plan at the given file path in parallel
+- `/plan-review sequential` — reviews the active plan sequentially (Claude first, then Codex)
+- `/plan-review sequential path/to/plan.md` — reviews the given file sequentially
+- `/plan-review path/to/plan.md sequential` — same (argument order doesn't matter)
+
+**Parallel mode** (default): Both reviewers run simultaneously in a single message.
+**Sequential mode**: Claude reviewer runs first and completes, then Codex reviewer runs second and completes. Each reviewer is still independent (Codex does NOT see Claude's review).
 
 ## Step 0: Locate the Plan
 
@@ -48,7 +54,11 @@ cp "<original_plan_path>" "/tmp/plan-review-claude-r<round>.md"
 cp "<original_plan_path>" "/tmp/plan-review-codex-r<round>.md"
 ```
 
-#### 1b. Parallel Review
+#### 1b. Dispatch Reviews
+
+Check whether **sequential** mode was requested (the word "sequential" appeared in the invocation arguments).
+
+##### Parallel mode (default)
 
 Spawn BOTH reviewers simultaneously in a single message (two Agent tool calls):
 
@@ -56,7 +66,7 @@ Spawn BOTH reviewers simultaneously in a single message (two Agent tool calls):
 ```
 Agent({
   description: "Claude plan review round <round>",
-  prompt: "You are a plan reviewer. Read the instructions in agents/claude-reviewer.md (located at ~/.claude/skills/plan-review/agents/claude-reviewer.md), then review the plan at /tmp/plan-review-claude-r<round>.md following those instructions exactly. Append your review to the end of that file.",
+  prompt: "You are a plan reviewer. Read the instructions in agents/claude-reviewer.md (located at /home/adebayo/.claude/skills/plan-review/agents/claude-reviewer.md), then review the plan at /tmp/plan-review-claude-r<round>.md following those instructions exactly. Append your review to the end of that file.",
   mode: "auto"
 })
 ```
@@ -66,11 +76,37 @@ Agent({
 Agent({
   description: "Codex plan review round <round>",
   subagent_type: "codex:codex-rescue",
-  prompt: "You are a plan reviewer. Read the instructions in agents/codex-reviewer.md (located at ~/.claude/skills/plan-review/agents/codex-reviewer.md), then review the plan at /tmp/plan-review-codex-r<round>.md following those instructions exactly. Append your review to the end of that file."
+  prompt: "You are a plan reviewer. Read the instructions in agents/codex-reviewer.md (located at /home/adebayo/.claude/skills/plan-review/agents/codex-reviewer.md), then review the plan at /tmp/plan-review-codex-r<round>.md following those instructions exactly. Append your review to the end of that file."
 })
 ```
 
 IMPORTANT: Both agents MUST be spawned in the same message to run in parallel.
+
+##### Sequential mode
+
+Spawn the Claude reviewer FIRST, wait for it to complete, THEN spawn the Codex reviewer. Each reviewer works on its own snapshot — the Codex reviewer does NOT see Claude's output.
+
+**Step 1 — Claude Code sub-agent:**
+```
+Agent({
+  description: "Claude plan review round <round>",
+  prompt: "You are a plan reviewer. Read the instructions in agents/claude-reviewer.md (located at /home/adebayo/.claude/skills/plan-review/agents/claude-reviewer.md), then review the plan at /tmp/plan-review-claude-r<round>.md following those instructions exactly. Append your review to the end of that file.",
+  mode: "auto"
+})
+```
+
+Wait for the Claude reviewer to complete before proceeding.
+
+**Step 2 — Codex reviewer:**
+```
+Agent({
+  description: "Codex plan review round <round>",
+  subagent_type: "codex:codex-rescue",
+  prompt: "You are a plan reviewer. Read the instructions in agents/codex-reviewer.md (located at /home/adebayo/.claude/skills/plan-review/agents/codex-reviewer.md), then review the plan at /tmp/plan-review-codex-r<round>.md following those instructions exactly. Append your review to the end of that file."
+})
+```
+
+Wait for the Codex reviewer to complete before proceeding to step 1c.
 
 #### 1c. Merge Reviews
 

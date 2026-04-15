@@ -6,10 +6,6 @@
 # Target agents: claude-code, antigravity
 # NOTE: codex and gemini are universal and already handled.
 
-# TODO:
-# - Get updated plan-review from claude code
-# - Get codex plan-review-cdx from codex
-
 # Resolve the directory this script lives in (for local copy skills)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -197,6 +193,7 @@ LOCAL_PIP_PACKAGES=(
 LOCAL_COPY_SKILLS=(
   # --- Planning ---
   "${SCRIPT_DIR}/skills/plan-review"                                            "plan-review"
+  "${SCRIPT_DIR}/skills/plan-review-cdx"                                        "plan-review-cdx"
 )
 
 
