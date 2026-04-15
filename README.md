@@ -4,18 +4,20 @@ Batch installs agent skills locally from [skills.sh](https://skills.sh).
 
 The `install-skills.sh` script uses `npx skills add` to install every skill defined in its built-in registry in a single run. Skills are installed globally (`--global`) for **claude-code** and **antigravity** agents. It also installs any required MCP servers, Claude Code plugins, Codex plugins, and npm global dependencies.
 
-The script runs eight installation phases in order:
+The script runs ten installation phases in order:
 
 1. **Agent skills** — via `npx skills add`
 2. **Claude MCP servers** — via `claude mcp add`
 3. **Codex MCP servers** — via `codex mcp add` (same servers, shared registry)
 4. **npm global packages** — via `npm install -g`
-5. **Local pip packages** — via `pip install` (`--local` only)
-6. **Local copy skills** — copy to `~/.agents/skills/` + symlink (`--local` only)
-7. **Claude Code plugins** — via `claude plugin marketplace add` + `claude plugin install`
-8. **Codex plugins** — via shallow repo clone + `~/.codex/config.toml` enablement
+5. **Agents-only copy skills** — copy to `~/.agents/skills/` only (no symlinks)
+6. **Claude-only copy skills** — copy to `~/.claude/skills/` only
+7. **Local pip packages** — via `pip install` (`--local` only)
+8. **Local copy skills** — copy to `~/.agents/skills/` + symlink (`--local` only)
+9. **Claude Code plugins** — via `claude plugin marketplace add` + `claude plugin install`
+10. **Codex plugins** — via shallow repo clone + `~/.codex/config.toml` enablement
 
-> **Note:** Phase 1 requires `npx`. Phases 2 and 7 require the `claude` CLI. Phases 3 and 8 require the `codex` CLI. Phase 5 requires `pip`. Missing CLIs cause the corresponding phases to be skipped. codex and gemini are universal agents and are already handled by `skills.sh` — no extra steps needed.
+> **Note:** Phase 1 requires `npx`. Phases 2 and 9 require the `claude` CLI. Phases 3 and 10 require the `codex` CLI. Phase 7 requires `pip`. Missing CLIs cause the corresponding phases to be skipped. codex and gemini are universal agents and are already handled by `skills.sh` — no extra steps needed.
 
 ## Prerequisites
 
@@ -151,6 +153,26 @@ Some skills and plugins require globally installed npm packages. These are insta
 | `@openai/codex` | codex plugin |
 
 
+## Bundled Copy Skills
+
+Skills bundled in the `skills/` directory of this repo that are always installed (no `--local` flag required). Each skill targets a specific agent directory.
+
+### Agents-Only Skills
+
+Copied into `~/.agents/skills/` only. No symlinks are created — these are available to agents that read from `~/.agents/skills/` directly.
+
+| Category | Skill | Source | Description |
+|---|---|---|---|
+| Planning | `plan-review-cdx` | `skills/plan-review-cdx/` | Two-reviewer QA loop for Codex (spec + execution reviewers) |
+
+### Claude-Only Skills
+
+Copied directly into `~/.claude/skills/` only. These are exclusive to Claude Code.
+
+| Category | Skill | Source | Description |
+|---|---|---|---|
+| Planning | `plan-review` | `skills/plan-review/` | Two-reviewer QA loop (Claude Code + Codex) with parallel/sequential modes |
+
 ## Local-Only Skills (`--local`)
 
 These skills are only installed when the `--local` flag is passed. They may have additional dependencies (e.g. Python packages) that are not needed by the default skill set.
@@ -170,8 +192,8 @@ Skills bundled in the `skills/` directory of this repo. These are copied into `~
 
 | Category | Skill | Source | Description |
 |---|---|---|---|
-| Planning | `plan-review` | `skills/plan-review/` | Two-reviewer QA loop (Claude Code + Codex) with parallel/sequential modes |
-| Planning | `plan-review-cdx` | `skills/plan-review-cdx/` | Two-reviewer QA loop for Codex (spec + execution reviewers) |
+| Image & vector graphics | `gimp` | `skills/gimp/` | Image manipulation via GIMP CLI |
+| Image & vector graphics | `inkscape` | `skills/inkscape/` | Vector graphics manipulation via Inkscape CLI |
 
 ### pip Dependencies (local)
 
@@ -228,17 +250,23 @@ CODEX_PLUGINS=(
 
 To **add** a Codex plugin, append a new quartet. To **remove** one, delete all four values.
 
-## Adding or Removing Local Copy Skills
+## Adding or Removing Copy Skills
 
-Edit the `LOCAL_COPY_SKILLS` array in `install-skills.sh`. Each entry is a pair — a source path and a skill name:
+There are three copy skill arrays, each targeting a different destination. Place the skill directory under `skills/` in this repo, then add an entry to the appropriate array in `install-skills.sh`:
+
+| Array | Target | Symlinks | Flag |
+|---|---|---|---|
+| `AGENTS_COPY_SKILLS` | `~/.agents/skills/` | none | always |
+| `CLAUDE_COPY_SKILLS` | `~/.claude/skills/` | none | always |
+| `LOCAL_COPY_SKILLS` | `~/.agents/skills/` | `~/.claude/skills/`, `~/.gemini/antigravity/skills/` | `--local` |
+
+Each entry is a pair — a source path and a skill name:
 
 ```bash
-LOCAL_COPY_SKILLS=(
+AGENTS_COPY_SKILLS=(
   "${SCRIPT_DIR}/skills/my-skill"    "my-skill"
 )
 ```
-
-Place the skill directory under `skills/` in this repo. The installer copies it to `~/.agents/skills/` and creates symlinks in `~/.claude/skills/` and `~/.gemini/antigravity/skills/`.
 
 ## Updating the Script
 
