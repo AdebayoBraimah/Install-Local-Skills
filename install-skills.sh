@@ -6,6 +6,10 @@
 # Target agents: claude-code, antigravity
 # NOTE: codex and gemini are universal and already handled.
 
+# TODO:
+#   - Add lit-<skills> from claude code
+#   - Create/modify lit-skills for codex
+
 # Resolve the directory this script lives in (for local copy skills)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -144,6 +148,43 @@ CODEX_PLUGINS=(
 
 # =========================================================================
 #
+# Agents-only copy skills registry (always installed)
+#
+#   Each entry is a pair: <source-path> followed by <skill-name>.
+#   These are local skill directories that are copied into
+#   ~/.agents/skills/<skill-name>/ only. No symlinks are created.
+#
+#   Always installed (no --local flag required).
+#
+# =========================================================================
+
+AGENTS_COPY_SKILLS=(
+  # --- Planning ---
+  "${SCRIPT_DIR}/skills/plan-review-cdx"                                        "plan-review-cdx"
+)
+
+
+# =========================================================================
+#
+# Claude-only copy skills registry (always installed)
+#
+#   Each entry is a pair: <source-path> followed by <skill-name>.
+#   These are local skill directories that are copied directly into
+#   ~/.claude/skills/<skill-name>/ (NOT ~/.agents/skills/).
+#   No symlinks are created — these are exclusive to Claude Code.
+#
+#   Always installed (no --local flag required).
+#
+# =========================================================================
+
+CLAUDE_COPY_SKILLS=(
+  # --- Planning ---
+  "${SCRIPT_DIR}/skills/plan-review"                                            "plan-review"
+)
+
+
+# =========================================================================
+#
 # Local-only skills registry (installed with --local)
 #
 #   Same pair format as SKILLS: <repo> followed by <skill-name>.
@@ -191,9 +232,26 @@ LOCAL_PIP_PACKAGES=(
 # =========================================================================
 
 LOCAL_COPY_SKILLS=(
-  # --- Planning ---
-  "${SCRIPT_DIR}/skills/plan-review"                                            "plan-review"
-  "${SCRIPT_DIR}/skills/plan-review-cdx"                                        "plan-review-cdx"
+  # --- Image & vector graphics ---
+  "${SCRIPT_DIR}/skills/gimp"                                                   "gimp"
+  "${SCRIPT_DIR}/skills/inkscape"                                               "inkscape"
+)
+
+
+# =========================================================================
+#
+# Local Claude-only copy skills registry (installed with --local)
+#
+#   Each entry is a pair: <source-path> followed by <skill-name>.
+#   These are local skill directories that are copied directly into
+#   ~/.claude/skills/<skill-name>/ (NOT ~/.agents/skills/).
+#   No symlinks are created — these are exclusive to Claude Code.
+#
+#   Only installed when the --local flag is passed.
+#
+# =========================================================================
+
+LOCAL_CLAUDE_COPY_SKILLS=(
 )
 
 
@@ -766,6 +824,101 @@ install_local_copy_skill(){
 }
 
 
+#######################################
+# Installs a local skill by copying it
+#   into ~/.agents/skills/ only.
+#   No symlinks are created.
+# Arguments:
+#   source_path: Absolute path to the
+#                local skill directory
+#   skill_name:  Skill name (directory name)
+# Globals:
+#   FAILED_AGENTS_COPY_SKILLS (appended on failure)
+#######################################
+install_agents_copy_skill(){
+  local source_path="${1}"
+  local skill_name="${2}"
+  local agents_dir="${HOME}/.agents/skills"
+  local target_dir="${agents_dir}/${skill_name}"
+
+  echo_blue "Installing agents skill: ${skill_name}  (from ${source_path})"
+
+  if [[ ! -d "${source_path}" ]]; then
+    echo_red "  -> Source directory not found: ${source_path}"
+    FAILED_AGENTS_COPY_SKILLS+=("${skill_name}")
+    echo
+    return
+  fi
+
+  # Copy skill to ~/.agents/skills/
+  mkdir -p "${agents_dir}"
+
+  if [[ -d "${target_dir}" ]]; then
+    echo_yellow "  -> Target exists, updating: ${target_dir}"
+    rm -rf "${target_dir}"
+  fi
+
+  if ! cp -R "${source_path}" "${target_dir}"; then
+    echo_red "  -> Failed to copy ${skill_name} to ${target_dir}"
+    FAILED_AGENTS_COPY_SKILLS+=("${skill_name}")
+    echo
+    return
+  fi
+
+  echo_green "  -> Copied to ${target_dir}"
+  echo_green "  -> ${skill_name} installed successfully"
+  echo
+}
+
+
+#######################################
+# Installs a local skill by copying it
+#   directly into ~/.claude/skills/.
+#   No ~/.agents/skills/ copy or symlinks
+#   are created — Claude Code exclusive.
+# Arguments:
+#   source_path: Absolute path to the
+#                local skill directory
+#   skill_name:  Skill name (directory name)
+# Globals:
+#   FAILED_CLAUDE_COPY_SKILLS (appended on failure)
+#######################################
+install_local_claude_copy_skill(){
+  local source_path="${1}"
+  local skill_name="${2}"
+  local claude_dir="${HOME}/.claude/skills"
+  local target_dir="${claude_dir}/${skill_name}"
+
+  echo_blue "Installing local Claude skill: ${skill_name}  (from ${source_path})"
+
+  if [[ ! -d "${source_path}" ]]; then
+    echo_red "  -> Source directory not found: ${source_path}"
+    FAILED_CLAUDE_COPY_SKILLS+=("${skill_name}")
+    echo
+    return
+  fi
+
+  # Copy skill directly to ~/.claude/skills/
+  mkdir -p "${claude_dir}"
+
+  if [[ -d "${target_dir}" ]]; then
+    echo_yellow "  -> Target exists, updating: ${target_dir}"
+    rm -rf "${target_dir}"
+  fi
+
+  if ! cp -R "${source_path}" "${target_dir}"; then
+    echo_red "  -> Failed to copy ${skill_name} to ${target_dir}"
+    FAILED_CLAUDE_COPY_SKILLS+=("${skill_name}")
+    echo
+    return
+  fi
+
+  echo_green "  -> Copied to ${target_dir}"
+  echo_green "  -> ${skill_name} installed successfully"
+  echo
+}
+
+
 # =========================================================================
 #
 # Main function
@@ -924,6 +1077,56 @@ main(){
   fi
 
   #
+  # Install agents-only copy skills (always)
+  #============================
+
+  FAILED_AGENTS_COPY_SKILLS=()
+
+  local total_agents_copy_skills=$(( ${#AGENTS_COPY_SKILLS[@]} / 2 ))
+
+  if [[ ${total_agents_copy_skills} -gt 0 ]]; then
+    echo
+    echo_blue "=========================================="
+    echo_blue " Installing ${total_agents_copy_skills} Agents-Only Skill(s)"
+    echo_blue "=========================================="
+    echo
+
+    local m=0
+    while [[ ${m} -lt ${#AGENTS_COPY_SKILLS[@]} ]]; do
+      local copy_source="${AGENTS_COPY_SKILLS[${m}]}"
+      local copy_skill="${AGENTS_COPY_SKILLS[$(( m + 1 ))]}"
+      m=$(( m + 2 ))
+
+      install_agents_copy_skill "${copy_source}" "${copy_skill}"
+    done
+  fi
+
+  #
+  # Install Claude-only copy skills (always)
+  #============================
+
+  FAILED_CLAUDE_COPY_SKILLS=()
+
+  local total_claude_copy_skills=$(( ${#CLAUDE_COPY_SKILLS[@]} / 2 ))
+
+  if [[ ${total_claude_copy_skills} -gt 0 ]]; then
+    echo
+    echo_blue "=========================================="
+    echo_blue " Installing ${total_claude_copy_skills} Claude-Only Skill(s)"
+    echo_blue "=========================================="
+    echo
+
+    local n=0
+    while [[ ${n} -lt ${#CLAUDE_COPY_SKILLS[@]} ]]; do
+      local claude_copy_source="${CLAUDE_COPY_SKILLS[${n}]}"
+      local claude_copy_skill="${CLAUDE_COPY_SKILLS[$(( n + 1 ))]}"
+      n=$(( n + 2 ))
+
+      install_local_claude_copy_skill "${claude_copy_source}" "${claude_copy_skill}"
+    done
+  fi
+
+  #
   # Install local pip packages (--local only)
   #============================
 
@@ -949,12 +1152,12 @@ main(){
 
   FAILED_COPY_SKILLS=()
 
-  local total_copy_skills=$(( ${#LOCAL_COPY_SKILLS[@]} / 2 ))
+  local total_local_copy_skills=$(( ${#LOCAL_COPY_SKILLS[@]} / 2 ))
 
-  if [[ "${install_local}" == true && ${total_copy_skills} -gt 0 ]]; then
+  if [[ "${install_local}" == true && ${total_local_copy_skills} -gt 0 ]]; then
     echo
     echo_blue "=========================================="
-    echo_blue " Installing ${total_copy_skills} Local Copy Skill(s)"
+    echo_blue " Installing ${total_local_copy_skills} Local Copy Skill(s)"
     echo_blue "=========================================="
     echo
 
@@ -965,6 +1168,29 @@ main(){
       m=$(( m + 2 ))
 
       install_local_copy_skill "${copy_source}" "${copy_skill}"
+    done
+  fi
+
+  #
+  # Install local Claude-only copy skills (--local only)
+  #============================
+
+  local total_local_claude_copy_skills=$(( ${#LOCAL_CLAUDE_COPY_SKILLS[@]} / 2 ))
+
+  if [[ "${install_local}" == true && ${total_local_claude_copy_skills} -gt 0 ]]; then
+    echo
+    echo_blue "=========================================="
+    echo_blue " Installing ${total_local_claude_copy_skills} Local Claude-Only Skill(s)"
+    echo_blue "=========================================="
+    echo
+
+    local n=0
+    while [[ ${n} -lt ${#LOCAL_CLAUDE_COPY_SKILLS[@]} ]]; do
+      local claude_copy_source="${LOCAL_CLAUDE_COPY_SKILLS[${n}]}"
+      local claude_copy_skill="${LOCAL_CLAUDE_COPY_SKILLS[$(( n + 1 ))]}"
+      n=$(( n + 2 ))
+
+      install_local_claude_copy_skill "${claude_copy_source}" "${claude_copy_skill}"
     done
   fi
 
@@ -1083,12 +1309,37 @@ main(){
     fi
   fi
 
-  if [[ "${install_local}" == true && ${total_copy_skills} -gt 0 ]]; then
+  if [[ ${total_agents_copy_skills} -gt 0 ]]; then
+    if [[ ${#FAILED_AGENTS_COPY_SKILLS[@]} -eq 0 ]]; then
+      echo_green " All ${total_agents_copy_skills} agents-only skill(s) installed successfully!"
+    else
+      echo_yellow " ${#FAILED_AGENTS_COPY_SKILLS[@]} agents-only skill(s) failed to install:"
+      for skill in "${FAILED_AGENTS_COPY_SKILLS[@]}"; do
+        echo_red "   - ${skill}"
+      done
+    fi
+  fi
+
+  if [[ "${install_local}" == true && ${total_local_copy_skills} -gt 0 ]]; then
     if [[ ${#FAILED_COPY_SKILLS[@]} -eq 0 ]]; then
-      echo_green " All ${total_copy_skills} local copy skill(s) installed successfully!"
+      echo_green " All ${total_local_copy_skills} local copy skill(s) installed successfully!"
     else
       echo_yellow " ${#FAILED_COPY_SKILLS[@]} local copy skill(s) failed to install:"
       for skill in "${FAILED_COPY_SKILLS[@]}"; do
+        echo_red "   - ${skill}"
+      done
+    fi
+  fi
+
+  local all_claude_copy_skills=${total_claude_copy_skills}
+  [[ "${install_local}" == true ]] && all_claude_copy_skills=$(( all_claude_copy_skills + total_local_claude_copy_skills ))
+
+  if [[ ${all_claude_copy_skills} -gt 0 ]]; then
+    if [[ ${#FAILED_CLAUDE_COPY_SKILLS[@]} -eq 0 ]]; then
+      echo_green " All ${all_claude_copy_skills} Claude-only skill(s) installed successfully!"
+    else
+      echo_yellow " ${#FAILED_CLAUDE_COPY_SKILLS[@]} Claude-only skill(s) failed to install:"
+      for skill in "${FAILED_CLAUDE_COPY_SKILLS[@]}"; do
         echo_red "   - ${skill}"
       done
     fi
@@ -1121,7 +1372,7 @@ main(){
   echo_green "Installed skills can be listed with: npx skills list --global"
 
   # Exit with failure if any skills, MCPs, npm/pip packages, or plugins failed
-  if [[ ${#FAILED_SKILLS[@]} -gt 0 || ${#FAILED_MCPS[@]} -gt 0 || ${#FAILED_CODEX_MCPS[@]} -gt 0 || ${#FAILED_NPMS[@]} -gt 0 || ${#FAILED_PIPS[@]} -gt 0 || ${#FAILED_COPY_SKILLS[@]} -gt 0 || ${#FAILED_PLUGINS[@]} -gt 0 || ${#FAILED_CODEX_PLUGINS[@]} -gt 0 ]]; then
+  if [[ ${#FAILED_SKILLS[@]} -gt 0 || ${#FAILED_MCPS[@]} -gt 0 || ${#FAILED_CODEX_MCPS[@]} -gt 0 || ${#FAILED_NPMS[@]} -gt 0 || ${#FAILED_AGENTS_COPY_SKILLS[@]} -gt 0 || ${#FAILED_PIPS[@]} -gt 0 || ${#FAILED_COPY_SKILLS[@]} -gt 0 || ${#FAILED_CLAUDE_COPY_SKILLS[@]} -gt 0 || ${#FAILED_PLUGINS[@]} -gt 0 || ${#FAILED_CODEX_PLUGINS[@]} -gt 0 ]]; then
     exit 1
   fi
 
