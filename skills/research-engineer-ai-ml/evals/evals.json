@@ -1,0 +1,53 @@
+{
+  "skill_name": "research-engineer-ai-ml",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "A paper draft claims a new optimizer is state of the art because it beats AdamW on CIFAR-10 by 0.7% in one run with one seed. Critique the evidence and state what experiments are required before the claim is credible.",
+      "expected_output": [
+        "Rejects single-seed evidence as insufficient for a stochastic AI/ML claim.",
+        "Requires 3-5+ independent seeds and reports variance, confidence intervals, effect sizes, or IQM where appropriate.",
+        "Requires fair and tuned baselines, including AdamW and a simple baseline when relevant, with matched compute and protocol.",
+        "Requires ablations that isolate the optimizer contribution and tests sensitivity to hyperparameters.",
+        "Avoids unverifiable claims and marks the current conclusion as provisional or unsupported."
+      ],
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "Design an experiment to test whether a new transformer attention variant improves long-context summarization quality without increasing compute too much.",
+      "expected_output": [
+        "States the hypothesis, target setting, falsification condition, and practically meaningful effect size.",
+        "Specifies datasets, splits, baselines, compute-matched training or finetuning protocol, and evaluation metrics.",
+        "Includes ablations isolating the attention variant from model size, context length, positional encoding, and training budget.",
+        "Requires multiple seeds and statistical reporting with variance, confidence intervals, and per-slice analysis.",
+        "Includes reproducibility metadata, compute and memory reporting, and failure analysis for long-context cases."
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Plan a PyTorch or JAX implementation for training a 2B parameter model on 8 GPUs with reliable checkpointing, evaluation, and reproducibility.",
+      "expected_output": [
+        "Defines module boundaries for data, model, training, evaluation, analysis, configs, and tests.",
+        "Covers explicit config management, seed propagation, dependency and hardware metadata, and resolved config logging.",
+        "Chooses and justifies DDP, FSDP, tensor parallelism, pipeline parallelism, gradient accumulation, or mixed precision based on scale constraints.",
+        "Specifies checkpoint contents including model, optimizer, scheduler, scaler, RNG state, config, step, and code version.",
+        "Includes logging, evaluation-from-checkpoint, rank-safe behavior, smoke tests, and likely failure modes."
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Evaluate a MARL method for cooperative navigation where agents have partial observability and can send only one discrete communication symbol per step.",
+      "expected_output": [
+        "Identifies the formal setting as partially observable multi-agent RL or Dec-POMDP-like and states observability and communication limits.",
+        "Analyzes credit assignment, coordination, centralized training versus decentralized execution, parameter sharing, and communication constraints.",
+        "Requires reward and success-rate reporting, plus coordination, communication, robustness, sample efficiency, or generalization metrics where relevant.",
+        "Includes ablations for communication, reward shaping, centralized critic, curriculum, privileged information, and parameter sharing.",
+        "Requires multiple seeds, environment/task variation, held-out scenarios or partner populations, and failure analysis for coordination breakdowns."
+      ],
+      "files": []
+    }
+  ]
+}

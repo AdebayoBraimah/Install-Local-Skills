@@ -1,0 +1,38 @@
+{
+  "skill_name": "mathematician",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Prove that for every natural number n, n + 0 = n. Give an informal proof and, if Lean is available, verify it in Lean 4.",
+      "expected_output": "Includes parsed claim, assumptions over Nat, induction proof, Lean formalization, exact Lean/Lake command, and Lean-verified only if the command exited 0.",
+      "files": [],
+      "expectations": [
+        "Output separates informal and formal reasoning.",
+        "Output runs or reports a Lean command.",
+        "Output does not claim Lean verification without command evidence."
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "A colleague claims that every function f : Nat -> Nat is eventually constant. Analyze the claim, prove it if true, or give a counterexample if false.",
+      "expected_output": "Identifies the universal claim as false, gives a concrete counterexample such as f n = n, explains why it is not eventually constant, and uses status Counterexample found or equivalent.",
+      "files": [],
+      "expectations": [
+        "Output states the claim is false.",
+        "Output gives a valid counterexample.",
+        "Output does not attempt to force a false Lean proof."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Formalize or carefully analyze this theorem: every continuous real-valued function on a compact interval [a,b] attains a maximum. Identify assumptions, likely Lean/Mathlib dependencies, and a proof strategy with small lemmas.",
+      "expected_output": "Identifies compactness, continuity, and domain assumptions; explains that Mathlib is likely needed for a full Lean proof; decomposes into small lemmas such as compactness of interval and extreme value theorem; and marks incomplete Lean work honestly unless verified.",
+      "files": [],
+      "expectations": [
+        "Output identifies missing or implicit assumptions.",
+        "Output mentions Mathlib or dependency needs.",
+        "Output avoids claiming Lean verification unless checked."
+      ]
+    }
+  ]
+}

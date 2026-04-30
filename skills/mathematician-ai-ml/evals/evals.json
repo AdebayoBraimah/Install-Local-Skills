@@ -1,0 +1,49 @@
+{
+  "skill_name": "mathematician-ai-ml",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Analyze this ML theorem claim: for a convex L-smooth function, gradient descent always converges linearly. State assumptions, prove or correct it, and use Lean if feasible.",
+      "expected_output": "Distinguishes convex from strongly convex convergence, states assumptions, gives proof/correction, and does not claim Lean verification without a successful command.",
+      "files": [],
+      "expectations": [
+        "States that ordinary convex L-smoothness alone does not imply linear convergence of iterates or suboptimality without stronger assumptions.",
+        "Names at least one missing stronger condition such as strong convexity or PL inequality.",
+        "Does not mark the result Lean-verified unless a successful Lean/Lake command is reported."
+      ]
+    },
+    {
+      "id": 1,
+      "prompt": "Formalize or rigorously analyze the claim that the Bellman optimality operator for a discounted finite MDP is a gamma-contraction in the sup norm. Identify assumptions and Lean feasibility.",
+      "expected_output": "States finite MDP and discount assumptions, proves or sketches the sup-norm contraction, and clearly reports Lean feasibility or gaps.",
+      "files": [],
+      "expectations": [
+        "States the discount condition 0 <= gamma < 1.",
+        "Identifies the sup norm and the contraction factor gamma.",
+        "Separates informal proof from Lean formalization status and does not overclaim Lean verification."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "A draft paper says E[XY] = E[X]E[Y] for random variables X and Y. Review this as an AI/ML mathematician: prove it, reject it, or add assumptions; discuss Lean formalization feasibility.",
+      "expected_output": "Flags independence and integrability/measurability assumptions, explains why the claim is false without them, and reports verification status honestly.",
+      "files": [],
+      "expectations": [
+        "States that the equality generally needs independence and integrability assumptions.",
+        "Mentions measurability or random-variable formalization concerns.",
+        "Provides either a counterexample/missing-assumption analysis or a proof under explicit assumptions."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Check this linear algebra claim used in a representation learning proof: if x^T A x >= 0 for all vectors x, then A has nonnegative eigenvalues. State exact assumptions and whether the claim needs symmetry.",
+      "expected_output": "Explains PSD quadratic form assumptions, distinguishes symmetric/Hermitian parts from arbitrary matrices, and avoids overgeneralization.",
+      "files": [],
+      "expectations": [
+        "States finite-dimensional real or complex vector-space assumptions.",
+        "Explains that symmetry/Hermitian assumptions are needed for the usual PSD eigenvalue conclusion.",
+        "Avoids claiming the full arbitrary-matrix statement without qualification."
+      ]
+    }
+  ]
+}

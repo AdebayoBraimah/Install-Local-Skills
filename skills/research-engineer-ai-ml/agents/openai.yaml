@@ -1,0 +1,4 @@
+interface:
+  display_name: "Research Engineer AI/ML"
+  short_description: "Rigorous AI/ML research engineering"
+  default_prompt: "Use $research-engineer-ai-ml to design a reproducible AI/ML experiment or implementation plan."
