@@ -7,8 +7,8 @@
 # NOTE: codex and gemini are universal and already handled.
 
 # TODO:
-#   - Add lit-<skills> from claude code
-#   - Create/modify lit-skills for codex
+#   - Add lit-<skills> from claude code [later; requires more work]
+#   - Create/modify lit-skills for codex [later; requires more work]
 
 # Resolve the directory this script lives in (for local copy skills)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -47,6 +47,9 @@ SKILLS=(
 
   # --- Diagrams ---
   "softaworks/agent-toolkit"                                                    "mermaid-diagrams"
+
+  # --- Visualization ---
+  "anthropics/knowledge-work-plugins"                                           "data-visualization"
 
   # --- Documentation ---
   "intellectronica/agent-skills"                                                "context7"
@@ -185,6 +188,29 @@ CLAUDE_COPY_SKILLS=(
 
 # =========================================================================
 #
+# Shared copy skills registry (always installed)
+#
+#   Each entry is a pair: <source-path> followed by <skill-name>.
+#   These are local skill directories that are copied into
+#   ~/.agents/skills/<skill-name>/ AND symlinked into:
+#     - ~/.claude/skills/<skill-name>
+#     - ~/.gemini/antigravity/skills/<skill-name>
+#
+#   Always installed (no --local flag required).
+#
+# =========================================================================
+
+COPY_SKILLS=(
+  # --- Visualization ---
+  "${SCRIPT_DIR}/skills/data-viz"                                               "data-viz"
+
+  # --- Research engineering ---
+  "${SCRIPT_DIR}/skills/research-engineer-ai-ml"                                "research-engineer-ai-ml"
+)
+
+
+# =========================================================================
+#
 # Local-only skills registry (installed with --local)
 #
 #   Same pair format as SKILLS: <repo> followed by <skill-name>.
@@ -257,6 +283,32 @@ LOCAL_CLAUDE_COPY_SKILLS=(
 
 # =========================================================================
 #
+# Math copy skills registry (installed with --math)
+#
+#   Each entry is a pair: <source-path> followed by <skill-name>.
+#   These are local skill directories that are copied into
+#   ~/.agents/skills/<skill-name>/ AND symlinked into:
+#     - ~/.claude/skills/<skill-name>
+#     - ~/.gemini/antigravity/skills/<skill-name>
+#
+#   Only installed when the --math flag is passed. The --math flag is
+#   independent of --local; either or both may be passed.
+#
+#   Math skills require Lean 4 and Lake (and Mathlib for the AI/ML
+#   variant) on PATH for verification. The script does not auto-install
+#   them — install elan from https://leanprover.github.io/ first.
+#
+# =========================================================================
+
+MATH_COPY_SKILLS=(
+  # --- Mathematics (requires Lean 4 + Lake; Mathlib for mathematician-ai-ml) ---
+  "${SCRIPT_DIR}/skills/mathematician"                                          "mathematician"
+  "${SCRIPT_DIR}/skills/mathematician-ai-ml"                                    "mathematician-ai-ml"
+)
+
+
+# =========================================================================
+#
 # Helper functions
 #
 # =========================================================================
@@ -287,25 +339,41 @@ Usage(){
       plugins, Codex plugins, and npm global dependencies
       when the required CLIs are available.
 
-      The script runs six installation phases in order:
+      The script runs nine always-on installation phases:
 
-        1. Agent skills      (via npx skills add)
-        2. Claude MCP servers(via claude mcp add)
-        3. Codex MCP servers (via codex mcp add)
-        4. npm packages      (via npm install -g)
-        5. Claude plugins    (via claude plugin install)
-        6. Codex plugins     (via repo clone + Codex config)
+        1. Agent skills          (via npx skills add)
+        2. Claude MCP servers    (via claude mcp add)
+        3. Codex MCP servers     (via codex mcp add)
+        4. npm packages          (via npm install -g)
+        5. Agents-only copy skills (copy to ~/.agents/skills)
+        6. Claude-only copy skills (copy to ~/.claude/skills)
+        7. Shared copy skills    (copy + symlinks)
+        8. Claude plugins        (via claude plugin install)
+        9. Codex plugins         (via repo clone + Codex config)
 
-      When --local is passed, three additional phases run:
+      When --local is passed, four additional phases run:
 
-        *  Local agent skills (via npx skills add)
-        *  Local pip packages (via pip install)
-        *  Local copy skills (copy to ~/.agents/skills + symlink)
+        *  Local agent skills   (via npx skills add)
+        *  Local pip packages   (via pip install)
+        *  Local copy skills    (copy + symlinks)
+        *  Local Claude-only copy skills (copy)
 
-      Phase 1 requires npx. Phases 2 and 5 require the
-      claude CLI. Phases 3 and 6 require the codex CLI.
+      When --math is passed, one additional phase runs:
+
+        *  Math copy skills     (copy + symlinks)
+
+      The --math flag is independent of --local; either or
+      both may be passed.
+
+      Phase 1 requires npx. Phases 2 and 8 require the
+      claude CLI. Phases 3 and 9 require the codex CLI.
       Local pip packages require pip. Missing CLIs cause
       the corresponding phases to be skipped.
+
+      Math skills require Lean 4 and Lake on PATH (and
+      Mathlib for the AI/ML variant) for Lean verification.
+      The script does not auto-install them — install elan
+      from https://leanprover.github.io/ first.
 
       NOTE:
       - codex and gemini are universal and already handled.
@@ -335,6 +403,11 @@ Usage(){
       -h, -help, --help               Prints this help menu, then exits.
       --local                         Also install local-only skills and
                                       their pip dependencies.
+      --math                          Also install math copy skills
+                                      (mathematician, mathematician-ai-ml).
+                                      Requires Lean 4 + Lake on PATH for
+                                      verification (not auto-installed).
+                                      Independent of --local.
 
   Example usage:
 
@@ -343,6 +416,12 @@ Usage(){
 
       # Install all skills including local-only skills
       $(basename ${0}) --local
+
+      # Install all skills including math skills
+      $(basename ${0}) --math
+
+      # Install everything (local + math)
+      $(basename ${0}) --local --math
 
       # Print this help menu
       $(basename ${0}) --help
@@ -762,22 +841,29 @@ install_pip_package(){
 #   source_path: Absolute path to the
 #                local skill directory
 #   skill_name:  Skill name (directory name)
+#   failed_var:  Optional name of the global
+#                array to append failures to
+#                (default: FAILED_COPY_SKILLS).
+#                Uses bash declare -n nameref;
+#                requires bash 4.3+.
 # Globals:
-#   FAILED_COPY_SKILLS (appended on failure)
+#   <failed_var> (appended on failure)
 #######################################
 install_local_copy_skill(){
   local source_path="${1}"
   local skill_name="${2}"
+  local failed_var="${3:-FAILED_COPY_SKILLS}"
   local agents_dir="${HOME}/.agents/skills"
   local target_dir="${agents_dir}/${skill_name}"
   local claude_dir="${HOME}/.claude/skills"
   local gemini_dir="${HOME}/.gemini/antigravity/skills"
+  declare -n failed_ref="${failed_var}"
 
   echo_blue "Installing local skill: ${skill_name}  (from ${source_path})"
 
   if [[ ! -d "${source_path}" ]]; then
     echo_red "  -> Source directory not found: ${source_path}"
-    FAILED_COPY_SKILLS+=("${skill_name}")
+    failed_ref+=("${skill_name}")
     echo
     return
   fi
@@ -792,7 +878,7 @@ install_local_copy_skill(){
 
   if ! cp -R "${source_path}" "${target_dir}"; then
     echo_red "  -> Failed to copy ${skill_name} to ${target_dir}"
-    FAILED_COPY_SKILLS+=("${skill_name}")
+    failed_ref+=("${skill_name}")
     echo
     return
   fi
@@ -943,11 +1029,13 @@ main(){
   #============================
 
   local install_local=false
+  local install_math=false
 
   while [[ ${#} -gt 0 ]]; do
     case "${1}" in
       -h|-help|--help) Usage; ;;
       --local) install_local=true ;;
+      --math)  install_math=true ;;
       -*) echo_red "$(basename ${0}): Unrecognized option ${1}" >&2; Usage; ;;
       *) break ;;
     esac
@@ -1127,6 +1215,31 @@ main(){
   fi
 
   #
+  # Install shared copy skills (always)
+  #============================
+
+  FAILED_COPY_SKILLS_ALWAYS=()
+
+  local total_copy_skills=$(( ${#COPY_SKILLS[@]} / 2 ))
+
+  if [[ ${total_copy_skills} -gt 0 ]]; then
+    echo
+    echo_blue "=========================================="
+    echo_blue " Installing ${total_copy_skills} Shared Copy Skill(s)"
+    echo_blue "=========================================="
+    echo
+
+    local p=0
+    while [[ ${p} -lt ${#COPY_SKILLS[@]} ]]; do
+      local shared_copy_source="${COPY_SKILLS[${p}]}"
+      local shared_copy_skill="${COPY_SKILLS[$(( p + 1 ))]}"
+      p=$(( p + 2 ))
+
+      install_local_copy_skill "${shared_copy_source}" "${shared_copy_skill}" FAILED_COPY_SKILLS_ALWAYS
+    done
+  fi
+
+  #
   # Install local pip packages (--local only)
   #============================
 
@@ -1191,6 +1304,31 @@ main(){
       n=$(( n + 2 ))
 
       install_local_claude_copy_skill "${claude_copy_source}" "${claude_copy_skill}"
+    done
+  fi
+
+  #
+  # Install math copy skills (--math only)
+  #============================
+
+  FAILED_MATH_COPY_SKILLS=()
+
+  local total_math_copy_skills=$(( ${#MATH_COPY_SKILLS[@]} / 2 ))
+
+  if [[ "${install_math}" == true && ${total_math_copy_skills} -gt 0 ]]; then
+    echo
+    echo_blue "=========================================="
+    echo_blue " Installing ${total_math_copy_skills} Math Copy Skill(s)"
+    echo_blue "=========================================="
+    echo
+
+    local q=0
+    while [[ ${q} -lt ${#MATH_COPY_SKILLS[@]} ]]; do
+      local math_source="${MATH_COPY_SKILLS[${q}]}"
+      local math_skill="${MATH_COPY_SKILLS[$(( q + 1 ))]}"
+      q=$(( q + 2 ))
+
+      install_local_copy_skill "${math_source}" "${math_skill}" FAILED_MATH_COPY_SKILLS
     done
   fi
 
@@ -1320,6 +1458,28 @@ main(){
     fi
   fi
 
+  if [[ ${total_copy_skills} -gt 0 ]]; then
+    if [[ ${#FAILED_COPY_SKILLS_ALWAYS[@]} -eq 0 ]]; then
+      echo_green " All ${total_copy_skills} shared copy skill(s) installed successfully!"
+    else
+      echo_yellow " ${#FAILED_COPY_SKILLS_ALWAYS[@]} shared copy skill(s) failed to install:"
+      for skill in "${FAILED_COPY_SKILLS_ALWAYS[@]}"; do
+        echo_red "   - ${skill}"
+      done
+    fi
+  fi
+
+  if [[ "${install_math}" == true && ${total_math_copy_skills} -gt 0 ]]; then
+    if [[ ${#FAILED_MATH_COPY_SKILLS[@]} -eq 0 ]]; then
+      echo_green " All ${total_math_copy_skills} math copy skill(s) installed successfully!"
+    else
+      echo_yellow " ${#FAILED_MATH_COPY_SKILLS[@]} math copy skill(s) failed to install:"
+      for skill in "${FAILED_MATH_COPY_SKILLS[@]}"; do
+        echo_red "   - ${skill}"
+      done
+    fi
+  fi
+
   if [[ "${install_local}" == true && ${total_local_copy_skills} -gt 0 ]]; then
     if [[ ${#FAILED_COPY_SKILLS[@]} -eq 0 ]]; then
       echo_green " All ${total_local_copy_skills} local copy skill(s) installed successfully!"
@@ -1372,7 +1532,7 @@ main(){
   echo_green "Installed skills can be listed with: npx skills list --global"
 
   # Exit with failure if any skills, MCPs, npm/pip packages, or plugins failed
-  if [[ ${#FAILED_SKILLS[@]} -gt 0 || ${#FAILED_MCPS[@]} -gt 0 || ${#FAILED_CODEX_MCPS[@]} -gt 0 || ${#FAILED_NPMS[@]} -gt 0 || ${#FAILED_AGENTS_COPY_SKILLS[@]} -gt 0 || ${#FAILED_PIPS[@]} -gt 0 || ${#FAILED_COPY_SKILLS[@]} -gt 0 || ${#FAILED_CLAUDE_COPY_SKILLS[@]} -gt 0 || ${#FAILED_PLUGINS[@]} -gt 0 || ${#FAILED_CODEX_PLUGINS[@]} -gt 0 ]]; then
+  if [[ ${#FAILED_SKILLS[@]} -gt 0 || ${#FAILED_MCPS[@]} -gt 0 || ${#FAILED_CODEX_MCPS[@]} -gt 0 || ${#FAILED_NPMS[@]} -gt 0 || ${#FAILED_AGENTS_COPY_SKILLS[@]} -gt 0 || ${#FAILED_PIPS[@]} -gt 0 || ${#FAILED_COPY_SKILLS[@]} -gt 0 || ${#FAILED_COPY_SKILLS_ALWAYS[@]} -gt 0 || ${#FAILED_MATH_COPY_SKILLS[@]} -gt 0 || ${#FAILED_CLAUDE_COPY_SKILLS[@]} -gt 0 || ${#FAILED_PLUGINS[@]} -gt 0 || ${#FAILED_CODEX_PLUGINS[@]} -gt 0 ]]; then
     exit 1
   fi
 
