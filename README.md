@@ -4,7 +4,7 @@ Batch installs agent skills locally from [skills.sh](https://skills.sh).
 
 The `install-skills.sh` script uses `npx skills add` to install every skill defined in its built-in registry in a single run. Skills are installed globally (`--global`) for **claude-code** and **antigravity** agents. It also installs any required MCP servers, Claude Code plugins, Codex plugins, and npm global dependencies.
 
-The script runs ten installation phases in order:
+The script runs **nine always-on installation phases**:
 
 1. **Agent skills** — via `npx skills add`
 2. **Claude MCP servers** — via `claude mcp add`
@@ -12,12 +12,24 @@ The script runs ten installation phases in order:
 4. **npm global packages** — via `npm install -g`
 5. **Agents-only copy skills** — copy to `~/.agents/skills/` only (no symlinks)
 6. **Claude-only copy skills** — copy to `~/.claude/skills/` only
-7. **Local pip packages** — via `pip install` (`--local` only)
-8. **Local copy skills** — copy to `~/.agents/skills/` + symlink (`--local` only)
-9. **Claude Code plugins** — via `claude plugin marketplace add` + `claude plugin install`
-10. **Codex plugins** — via shallow repo clone + `~/.codex/config.toml` enablement
+7. **Shared copy skills** — copy to `~/.agents/skills/` + symlinks to `~/.claude/skills/` and `~/.gemini/antigravity/skills/`
+8. **Claude Code plugins** — via `claude plugin marketplace add` + `claude plugin install`
+9. **Codex plugins** — via shallow repo clone + `~/.codex/config.toml` enablement
 
-> **Note:** Phase 1 requires `npx`. Phases 2 and 9 require the `claude` CLI. Phases 3 and 10 require the `codex` CLI. Phase 7 requires `pip`. Missing CLIs cause the corresponding phases to be skipped. codex and gemini are universal agents and are already handled by `skills.sh` — no extra steps needed.
+When `--local` is passed, **four additional phases** run:
+
+- **Local agent skills** — via `npx skills add`
+- **Local pip packages** — via `pip install`
+- **Local copy skills** — copy + symlinks
+- **Local Claude-only copy skills** — copy to `~/.claude/skills/` only
+
+When `--math` is passed, **one additional phase** runs:
+
+- **Math copy skills** — copy + symlinks (`mathematician`, `mathematician-ai-ml`)
+
+`--math` is independent of `--local`; either or both may be passed.
+
+> **Note:** Phase 1 requires `npx`. Phases 2 and 8 require the `claude` CLI. Phases 3 and 9 require the `codex` CLI. The `--local` pip phase requires `pip`. The `--math` phase requires Lean 4 + Lake on PATH for runtime verification (not auto-installed). Missing CLIs cause the corresponding phases to be skipped. codex and gemini are universal agents and are already handled by `skills.sh` — no extra steps needed.
 
 ## Prerequisites
 
@@ -26,6 +38,7 @@ The script runs ten installation phases in order:
 - [Codex CLI](https://developers.openai.com/codex/cli/) (optional — required for Codex MCP server and plugin installation)
 - [Python pip](https://pip.pypa.io/) (optional — required for `--local` pip package installation)
 - [draw.io Desktop](https://github.com/jgraph/drawio-desktop) (optional — required for the `drawio` local skill)
+- [Lean 4 + Lake (via elan)](https://leanprover.github.io/) (optional — required only for `--math`; install with `curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh`. Mathlib is required for the `mathematician-ai-ml` skill's full feature set.)
 - If this is your **first time** installing skills, run the interactive install once so that `npx` can set things up:
 
   ```bash
@@ -42,11 +55,17 @@ cd Install-Local-Skills
 # Make the script executable (one-time)
 chmod +x install-skills.sh
 
-# Install all skills
+# Install all skills (always-on phases only)
 ./install-skills.sh
 
 # Install all skills including local-only skills
 ./install-skills.sh --local
+
+# Install all skills including math skills (requires Lean + Lake)
+./install-skills.sh --math
+
+# Install everything (local + math)
+./install-skills.sh --local --math
 
 # Print the help menu
 ./install-skills.sh --help
@@ -109,6 +128,7 @@ If any skills, MCP servers, npm packages, or plugins fail, the summary lists the
 | Research | `research-engineer` | davila7/claude-code-templates |
 | Diagrams | `mermaid-diagrams` | softaworks/agent-toolkit |
 | Diagrams | `excalidraw` | ooiyeefei/ccc |
+| Visualization | `data-visualization` | anthropics/knowledge-work-plugins |
 | Documentation | `context7` | intellectronica/agent-skills |
 | Writing | `humanizer` | davila7/claude-code-templates |
 | CLI | `cli-anything` | hkuds/cli-anything |
@@ -171,7 +191,29 @@ Copied directly into `~/.claude/skills/` only. These are exclusive to Claude Cod
 
 | Category | Skill | Source | Description |
 |---|---|---|---|
-| Planning | `plan-review` | `skills/plan-review/` | Two-reviewer QA loop (Claude Code + Codex) with parallel/sequential modes |
+| Planning | `plan-review` | `skills/plan-review/` | Two-reviewer QA loop with default Claude+Codex pairing and a `claude-only` fallback (auto-engaged when Codex is unavailable, e.g. on HPC SLURM nodes) |
+
+### Shared Skills
+
+Copied into `~/.agents/skills/` AND symlinked into `~/.claude/skills/` and `~/.gemini/antigravity/skills/`. Always installed.
+
+| Category | Skill | Source | Description |
+|---|---|---|---|
+| Visualization | `data-viz` | `skills/data-viz/` | Customized variant of upstream `data-visualization` extended for ML, statistical, high-dimensional, scalable, and publication workflows. Both skills are installed; trigger by name. |
+| Research engineering | `research-engineer-ai-ml` | `skills/research-engineer-ai-ml/` | AI/ML research engineering: reproducible experiments, baselines/ablations, PyTorch/JAX implementation plans |
+
+> **Note:** `mathematician-ai-ml-workspace` (under `~/.agents/skills/`) is a Lean scratch workspace, not a skill — intentionally excluded from bundling.
+
+## Math Skills (`--math`)
+
+Installed only when `--math` is passed. The flag is independent of `--local`; either or both may be passed.
+
+| Category | Skill | Source | Description |
+|---|---|---|---|
+| Mathematics | `mathematician` | `skills/mathematician/` | Mathematical reasoning, theorem proving, Lean 4 formalization, proof checking |
+| Mathematics | `mathematician-ai-ml` | `skills/mathematician-ai-ml/` | AI/ML-specific mathematical reasoning with Mathlib-aware Lean formalization |
+
+> **Prerequisites for `--math`:** Lean 4 and Lake on PATH (install via [elan](https://leanprover.github.io/)). Mathlib is required for the `mathematician-ai-ml` skill's full feature set. The script does **not** auto-install these — the bundled skills run their own `lean --version` / `lake --version` runtime checks and fall back to informal mathematics when Lean is unavailable.
 
 ## Local-Only Skills (`--local`)
 
@@ -252,13 +294,22 @@ To **add** a Codex plugin, append a new quartet. To **remove** one, delete all f
 
 ## Adding or Removing Copy Skills
 
-There are three copy skill arrays, each targeting a different destination. Place the skill directory under `skills/` in this repo, then add an entry to the appropriate array in `install-skills.sh`:
+There are five copy skill arrays, each targeting a different destination and gated by a different flag. Place the skill directory under `skills/` in this repo, then add an entry to the appropriate array in `install-skills.sh`:
 
 | Array | Target | Symlinks | Flag |
 |---|---|---|---|
 | `AGENTS_COPY_SKILLS` | `~/.agents/skills/` | none | always |
 | `CLAUDE_COPY_SKILLS` | `~/.claude/skills/` | none | always |
+| `COPY_SKILLS` | `~/.agents/skills/` | `~/.claude/skills/`, `~/.gemini/antigravity/skills/` | always |
 | `LOCAL_COPY_SKILLS` | `~/.agents/skills/` | `~/.claude/skills/`, `~/.gemini/antigravity/skills/` | `--local` |
+| `LOCAL_CLAUDE_COPY_SKILLS` | `~/.claude/skills/` | none | `--local` |
+| `MATH_COPY_SKILLS` | `~/.agents/skills/` | `~/.claude/skills/`, `~/.gemini/antigravity/skills/` | `--math` |
+
+> **Repo as source of truth:** Each install run overwrites the matching `~/.agents/skills/<name>/` entries with the bundled copies in this repo. To promote a local edit back into the repo, copy from `~/.agents/skills/<name>/` into `skills/<name>/`, re-run the path-portability rewrite, and commit. Skills are overwritten only when their gating flag matches:
+>
+> - Always overwritten: `data-viz`, `research-engineer-ai-ml` (`COPY_SKILLS`); `plan-review-cdx` (`AGENTS_COPY_SKILLS`); `plan-review` (`CLAUDE_COPY_SKILLS`).
+> - Overwritten only with `--local`: `gimp`, `inkscape` (`LOCAL_COPY_SKILLS`).
+> - Overwritten only with `--math`: `mathematician`, `mathematician-ai-ml` (`MATH_COPY_SKILLS`).
 
 Each entry is a pair — a source path and a skill name:
 
