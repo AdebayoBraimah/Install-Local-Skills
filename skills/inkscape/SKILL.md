@@ -15,11 +15,13 @@ Manipulate vector graphics via the CLI-Anything Inkscape harness. Supports one-s
 
 ## Configuration
 
+> Harness paths assume the author's macOS Anaconda install layout. Adjust the listed paths to match your local install of `cli-anything-inkscape` if needed.
+
 | Setting | Value |
 |---|---|
-| CLI tool | `/Users/adebayobraimah/anaconda3/bin/cli-anything-inkscape` |
+| CLI tool | `~/anaconda3/bin/cli-anything-inkscape` |
 | Inkscape backend | `/opt/homebrew/bin/inkscape` (v1.4.2) |
-| Harness source | `/Users/adebayobraimah/bin/inkscape/agent-harness/` |
+| Harness source | `~/bin/inkscape/agent-harness/` |
 | Architecture | Hybrid: lxml for DOM ops + Inkscape CLI for export/path-ops/queries |
 | Supported input | SVG |
 | Supported output | SVG, PNG, PDF, PS, EPS |

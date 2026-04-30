@@ -78,9 +78,9 @@ the user request authorizes exactly these two reviewer subagents.
 Use two Codex subagents:
 
 - Spec reviewer: uses
-  `/home/adebayo/.agents/skills/plan-review-cdx/agents/plan-reviewer-spec.md`
+  `${HOME}/.agents/skills/plan-review-cdx/agents/plan-reviewer-spec.md`
 - Execution reviewer: uses
-  `/home/adebayo/.agents/skills/plan-review-cdx/agents/plan-reviewer-exec.md`
+  `${HOME}/.agents/skills/plan-review-cdx/agents/plan-reviewer-exec.md`
 
 When using Codex's agent tools, spawn both reviewers with `spawn_agent` before
 calling `wait_agent` on either reviewer. Use fresh independent prompts for both
@@ -96,7 +96,7 @@ Spec reviewer prompt:
 
 ```text
 You are a plan reviewer. Read the instructions in
-/home/adebayo/.agents/skills/plan-review-cdx/agents/plan-reviewer-spec.md,
+${HOME}/.agents/skills/plan-review-cdx/agents/plan-reviewer-spec.md,
 then review the plan at /tmp/plan-review-cdx-spec-r<round>.md following those
 instructions exactly. Append your review to the end of that file if your file
 edits are visible to the parent session. In all cases, return the exact review
@@ -107,7 +107,7 @@ Execution reviewer prompt:
 
 ```text
 You are a plan reviewer. Read the instructions in
-/home/adebayo/.agents/skills/plan-review-cdx/agents/plan-reviewer-exec.md,
+${HOME}/.agents/skills/plan-review-cdx/agents/plan-reviewer-exec.md,
 then review the plan at /tmp/plan-review-cdx-exec-r<round>.md following those
 instructions exactly. Append your review to the end of that file if your file
 edits are visible to the parent session. In all cases, return the exact review

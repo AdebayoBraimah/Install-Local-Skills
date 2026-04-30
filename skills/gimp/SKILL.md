@@ -14,9 +14,11 @@ Manipulate images via the CLI-Anything GIMP harness. Supports single-image opera
 
 ## Configuration
 
+> Harness paths assume the author's macOS Anaconda install layout. Adjust the listed paths to match your local install of `cli-anything-gimp` if needed.
+
 | Setting | Value |
 |---|---|
-| CLI tool | `/Users/adebayobraimah/anaconda3/bin/cli-anything-gimp` |
+| CLI tool | `~/anaconda3/bin/cli-anything-gimp` |
 | GIMP backend | `/Applications/GIMP.app/Contents/MacOS/gimp-console` |
 | Supported input | PNG, JPEG, TIFF, BMP, WebP, XCF |
 | Supported output | PNG, JPEG, TIFF, BMP, WebP, XCF |
