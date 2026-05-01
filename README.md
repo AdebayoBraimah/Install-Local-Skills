@@ -38,7 +38,7 @@ When `--math` is passed, **one additional phase** runs:
 - [Codex CLI](https://developers.openai.com/codex/cli/) (optional — required for Codex MCP server and plugin installation)
 - [Python pip](https://pip.pypa.io/) (optional — required for `--local` pip package installation)
 - [draw.io Desktop](https://github.com/jgraph/drawio-desktop) (optional — required for the `drawio` local skill)
-- [Lean 4 + Lake (via elan)](https://leanprover.github.io/) (optional — required only for `--math`; install with `curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh`. Mathlib is required for the `mathematician-ai-ml` skill's full feature set.)
+- [Lean 4 + Lake (via elan)](https://leanprover.github.io/) (optional — required only for `--math`; see [Installing Lean 4 + Lake](#installing-lean-4--lake) below. Mathlib is required for the `mathematician-ai-ml` skill's full feature set.)
 - If this is your **first time** installing skills, run the interactive install once so that `npx` can set things up:
 
   ```bash
@@ -144,6 +144,7 @@ Plugins extend Claude Code with additional capabilities beyond skills. They are 
 | `ccc-skills` | ccc | ooiyeefei/ccc | Skills collection (excalidraw, streak) |
 
 > **Notes:**
+>
 > - After installation, run `/codex:setup` inside Claude Code to verify Codex CLI readiness and complete authentication. Use `/codex:setup --enable-review-gate` to enable a stop-time review gate that requires Codex to review your changes before Claude Code completes a task. You will also need a [ChatGPT subscription or OpenAI API key](https://developers.openai.com/codex/pricing).
 > - The `ccc-skills` plugin installs the excalidraw diagram generator and the streak challenge tracker as Claude Code skills.
 
@@ -171,7 +172,6 @@ Some skills and plugins require globally installed npm packages. These are insta
 |---|---|
 | `@mermaid-js/mermaid-cli` | mermaid-diagrams |
 | `@openai/codex` | codex plugin |
-
 
 ## Bundled Copy Skills
 
@@ -215,6 +215,90 @@ Installed only when `--math` is passed. The flag is independent of `--local`; ei
 
 > **Prerequisites for `--math`:** Lean 4 and Lake on PATH (install via [elan](https://leanprover.github.io/)). Mathlib is required for the `mathematician-ai-ml` skill's full feature set. The script does **not** auto-install these — the bundled skills run their own `lean --version` / `lake --version` runtime checks and fall back to informal mathematics when Lean is unavailable.
 
+### Installing Lean 4 + Lake
+
+Lean 4 and Lake are installed together via [elan](https://github.com/leanprover/elan), the official Lean version manager. `elan` provisions the `lean`, `lake`, and `leanc` binaries on PATH and pins the toolchain per-project from a `lean-toolchain` file (so Mathlib-based projects get the exact compiler they need).
+
+#### macOS / Linux
+
+```bash
+# Install elan (non-interactive, default toolchain = stable)
+curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
+  | sh -s -- -y --default-toolchain leanprover/lean4:stable
+
+# Add elan to your current shell (new shells pick this up automatically via ~/.profile)
+source "$HOME/.elan/env"
+
+# Important for reproducibility
+elan default leanprover/lean4:stable
+
+# Verify
+lean --version
+lake --version
+elan show
+```
+
+If your shell does not source `~/.profile` automatically (e.g. zsh on macOS), add this to `~/.zshrc`:
+
+```bash
+. "$HOME/.elan/env"
+```
+
+#### Windows
+
+Download and run [`elan-init.exe`](https://github.com/leanprover/elan/releases/latest) from the elan releases page, or via PowerShell:
+
+```powershell
+curl -L -o elan-init.exe https://github.com/leanprover/elan/releases/latest/download/elan-init-x86_64-pc-windows-msvc.exe
+./elan-init.exe -y --default-toolchain leanprover/lean4:stable
+```
+
+Open a new terminal and run `lean --version` and `lake --version` to verify.
+
+#### Homebrew (macOS, alternative)
+
+```bash
+brew install elan-init
+elan default leanprover/lean4:stable
+```
+
+#### Pinning a toolchain
+
+Inside any Lake project, the file `lean-toolchain` controls which Lean version is used. The first time you run `lake build` (or `lake exe cache get`) inside a project, elan downloads the pinned toolchain automatically. To switch the global default:
+
+```bash
+elan default leanprover/lean4:stable    # latest stable
+elan default leanprover/lean4:nightly   # latest nightly (Mathlib head tracks this)
+elan toolchain list                     # show installed toolchains
+```
+
+#### Mathlib
+
+Mathlib is provided per-project, not globally. The `mathematician-ai-ml` skill bootstraps a scratch workspace at `~/lean-ai-ml-math/AIMLMath` on first use via:
+
+```bash
+~/.agents/skills/mathematician-ai-ml/scripts/init_aiml_workspace.sh
+```
+
+Internally this runs `lake new AIMLMath math.lean` (the Mathlib-aware template) and then `lake exe cache get` to pull pre-built Mathlib oleans (avoids a multi-hour local build). Re-run `lake exe cache get` inside the project whenever you bump the Mathlib revision.
+
+To create a new Mathlib project manually:
+
+```bash
+lake new my-project math.lean
+cd my-project
+lake exe cache get
+lake build
+```
+
+#### Uninstalling
+
+```bash
+elan self uninstall
+```
+
+This removes `~/.elan/`, all installed toolchains, and the PATH shim.
+
 ## Local-Only Skills (`--local`)
 
 These skills are only installed when the `--local` flag is passed. They may have additional dependencies (e.g. Python packages) that are not needed by the default skill set.
@@ -247,11 +331,14 @@ Local skills may require Python packages. These are installed automatically via 
 | `playwright` | notebooklm |
 
 > **Notes:**
+>
 > - After `playwright` is installed, `playwright install chromium` is run automatically to download the Chromium browser binary.
 > - After installation, authenticate with NotebookLM (first time only, opens browser):
+>
 >   ```bash
 >   notebooklm login
 >   ```
+>
 > - See the [notebooklm-py documentation](https://github.com/teng-lin/notebooklm-py?tab=readme-ov-file) for full usage details.
 > - The `drawio` skill requires the [draw.io Desktop](https://github.com/jgraph/drawio-desktop) application to be installed.
 
