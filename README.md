@@ -39,6 +39,11 @@ When `--math` is passed, **one additional phase** runs:
 - [Python pip](https://pip.pypa.io/) (optional — required for `--local` pip package installation)
 - [draw.io Desktop](https://github.com/jgraph/drawio-desktop) (optional — required for the `drawio` local skill)
 - [Lean 4 + Lake (via elan)](https://leanprover.github.io/) (optional — required only for `--math`; see [Installing Lean 4 + Lake](#installing-lean-4--lake) below. Mathlib is required for the `mathematician-ai-ml` skill's full feature set.)
+- Python ≥3.10 on PATH (conda envs OK; `which python` is consulted first) — required for `--repo-tools`.
+- Node.js ≥22 — required by GitNexus under `--repo-tools` (the rest of the script works with older Node).
+- `jq` — required only for Antigravity IDE MCP registration under `--repo-tools`; install via `brew install jq` on macOS. Other agents work without it.
+- Optional CLIs that `--repo-tools` wires up: `claude`, `codex`, `gemini`. Missing CLIs are skipped with yellow warnings, not failures.
+- Optional: Xcode Command Line Tools on macOS for GitNexus's Tree-sitter postinstall; set `GITNEXUS_SKIP_OPTIONAL_GRAMMARS=1` to skip the optional grammar build.
 - If this is your **first time** installing skills, run the interactive install once so that `npx` can set things up:
 
   ```bash
@@ -103,6 +108,12 @@ chmod +x install-skills.sh
 
 # Install everything (local + math)
 ./install-skills.sh --local --math
+
+# Install repo-analysis tools (Graphify + GitNexus)
+./install-skills.sh --repo-tools
+
+# Combined: local skills + repo tools
+./install-skills.sh --local --repo-tools
 
 # Print the help menu
 ./install-skills.sh --help
@@ -340,6 +351,68 @@ elan self uninstall
 
 This removes `~/.elan/`, all installed toolchains, and the PATH shim.
 
+## Repo Tools (`--repo-tools`)
+
+Installed only when `--repo-tools` is passed. The flag is independent of `--local` and `--math`; any combination may be passed. Repo tools are code-intelligence packages that ship via PyPI / npm (not skill registries), and they need explicit MCP / skill registration for each agent runtime — this flag automates that wiring with zero human intervention.
+
+| Tool | Package | Source | Description |
+|---|---|---|---|
+| Graphify | `graphifyy[mcp]` (pip) | [PyPI](https://pypi.org/project/graphifyy/) | Builds queryable code knowledge graphs; installs global skill files for Claude Code, Codex, Gemini CLI, and Antigravity. |
+| GitNexus | `gitnexus` (npm) | [npm](https://www.npmjs.com/package/gitnexus) | 16-tool code-intelligence MCP server, exposed via `gitnexus mcp`. |
+
+What gets installed:
+
+- **Graphify** via `python -m pip install graphifyy[mcp]` using the highest-priority interpreter detected by `which python` (so an activated conda env wins) that satisfies Python ≥3.10.
+- Graphify global skill files for each agent via the documented platform commands: `graphify install` (Claude Code), `graphify install --platform codex` (Codex), and `graphify install --platform gemini` (Gemini CLI, run from a temp directory that is removed afterward to avoid project-local writes).
+- Antigravity global Graphify skill: the installer copies Graphify's packaged `skill.md` into `~/.agents/skills/graphify/SKILL.md`, prepending an Antigravity-compatible frontmatter. The documented `graphify antigravity install` command is intentionally **not** invoked here because it mutates the current project; treat it as a per-project bootstrap step in target repos.
+- Codex Graphify enablement: `[features].multi_agent = true` is added to `~/.codex/config.toml` idempotently. This is required by Graphify's Codex parallel extraction.
+- **GitNexus** via `npm install -g gitnexus` (Node ≥22 required).
+- **GitNexus MCP** registration for all four runtimes from `REPO_TOOL_MCP_SERVERS`:
+  - Claude Code: `claude mcp add -s user gitnexus -- npx -y gitnexus@latest mcp`
+  - Codex: `codex mcp add gitnexus -- npx -y gitnexus@latest mcp`
+  - Gemini CLI: `gemini mcp add --scope user gitnexus npx -y gitnexus@latest mcp`
+  - Antigravity IDE: idempotent `jq` merge into `~/.gemini/antigravity/mcp_config.json` (preserves other keys, no duplicates on re-run).
+- GitNexus MCP runs on demand via `npx -y gitnexus@latest mcp`; the first cold start downloads the package.
+
+> **Not part of global install:** `graphify extract`, `graphify gemini install`, `graphify antigravity install`, and `gitnexus analyze` are per-repo bootstrap commands the user runs inside target projects.
+
+### Verifying Repo Tools
+
+After running `./install-skills.sh --repo-tools`:
+
+```bash
+# 1. Help text mentions the new flag
+./install-skills.sh --help | grep -- --repo-tools
+
+# 2. Graphify installed and globally registered
+which graphify                       # should resolve
+graphify --version                   # prints a version
+grep -A5 '^\[features\]' ~/.codex/config.toml | grep 'multi_agent = true'
+test -f ~/.agents/skills/graphify/SKILL.md
+# Repo should NOT be mutated by Graphify Gemini install:
+test ! -e ./GEMINI.md
+test ! -e ./.gemini/settings.json
+test ! -e ./.agents/rules/graphify.md
+test ! -e ./.agents/workflows/graphify.md
+
+# 3. GitNexus installed
+which gitnexus
+gitnexus --version
+
+# 4. GitNexus MCP registered for each runtime
+claude mcp list | grep gitnexus       # Claude Code (user scope)
+codex  mcp list | grep gitnexus       # Codex
+gemini mcp list | grep gitnexus       # Gemini CLI (user scope, if gemini CLI present)
+jq '.mcpServers.gitnexus' ~/.gemini/antigravity/mcp_config.json   # Antigravity (if installed)
+
+# 5. Smoke-test the MCP server (Ctrl-C after the handshake prints)
+npx -y gitnexus@latest mcp
+
+# 6. Re-running is idempotent. Antigravity merge is a jq assignment, never a duplicate.
+./install-skills.sh --repo-tools
+jq '.mcpServers | keys' ~/.gemini/antigravity/mcp_config.json
+```
+
 ## Local-Only Skills (`--local`)
 
 These skills are only installed when the `--local` flag is passed. They may have additional dependencies (e.g. Python packages) that are not needed by the default skill set.
@@ -446,6 +519,30 @@ AGENTS_COPY_SKILLS=(
   "${SCRIPT_DIR}/skills/my-skill"    "my-skill"
 )
 ```
+
+## Adding or Removing Repo Tools
+
+The `--repo-tools` flag is driven by three arrays at the top of `install-skills.sh`:
+
+```bash
+# Single pip package name per entry
+REPO_TOOL_PIP_PACKAGES=(
+  "graphifyy[mcp]"
+)
+
+# Single npm package name per entry
+REPO_TOOL_NPM_GLOBALS=(
+  "gitnexus"
+)
+
+# Triplet: <name> <scope> <command...> — used for Claude, Codex, Gemini,
+# and Antigravity. Codex ignores scope; command tokens are whitespace-split.
+REPO_TOOL_MCP_SERVERS=(
+  "gitnexus" "user" "npx -y gitnexus@latest mcp"
+)
+```
+
+To **add** a repo tool, append to whichever arrays match its packaging (pip / npm / MCP). To **remove** one, delete the matching lines from each array (preserve the stride: 1 line per pip/npm entry, 3 lines per MCP entry).
 
 ## Updating the Script
 

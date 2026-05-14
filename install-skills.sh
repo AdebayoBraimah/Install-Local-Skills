@@ -346,6 +346,40 @@ MATH_COPY_SKILLS=(
 
 # =========================================================================
 #
+# Repo-tools registries (installed with --repo-tools)
+#
+#   --repo-tools installs code-intelligence tools that ship as installable
+#   packages (not skills) and wires their MCP servers into Claude Code,
+#   Codex, Gemini CLI, and Antigravity IDE.
+#
+#   REPO_TOOL_PIP_PACKAGES: single pip package name per entry.
+#   REPO_TOOL_NPM_GLOBALS:  single npm package name per entry.
+#   REPO_TOOL_MCP_SERVERS:  triplet of <name> <scope> <command...>.
+#     The same triplets are used for Claude, Codex, Gemini, and Antigravity.
+#     Codex ignores scope; Antigravity is merged via jq into
+#     ~/.gemini/antigravity/mcp_config.json.
+#     Command strings are whitespace-tokenized; do not add quoted args.
+#
+# =========================================================================
+
+REPO_TOOL_PIP_PACKAGES=(
+  # --- Graphify (code knowledge graphs + global skill files) ---
+  "graphifyy[mcp]"
+)
+
+REPO_TOOL_NPM_GLOBALS=(
+  # --- GitNexus (16-tool code-intelligence MCP server) ---
+  "gitnexus"
+)
+
+REPO_TOOL_MCP_SERVERS=(
+  # name | scope (Claude+Gemini honor it; Codex ignores) | command
+  "gitnexus" "user" "npx -y gitnexus@latest mcp"
+)
+
+
+# =========================================================================
+#
 # Helper functions
 #
 # =========================================================================
@@ -402,10 +436,30 @@ Usage(){
       The --math flag is independent of --local; either or
       both may be passed.
 
+      When --repo-tools is passed, the following additional
+      phases run:
+
+        *  Repo-tool pip packages (graphifyy[mcp]) and global
+           Graphify skill registration for Claude Code, Codex,
+           Gemini CLI, and Antigravity IDE. Codex Graphify also
+           gets [features].multi_agent = true added to
+           ~/.codex/config.toml idempotently.
+        *  Repo-tool npm globals (gitnexus) requires Node >=22.
+        *  Repo-tool MCP server registration (gitnexus) for
+           Claude Code, Codex, Gemini CLI, and Antigravity IDE.
+
+      --repo-tools is independent of --local and --math.
+
       Phase 1 requires npx. Phases 2 and 8 require the
       claude CLI. Phases 3 and 9 require the codex CLI.
       Local pip packages require pip. Missing CLIs cause
       the corresponding phases to be skipped.
+
+      --repo-tools requires Python >=3.10 (which python is
+      consulted first so an activated conda env wins) and
+      Node >=22. Optional: gemini CLI (Gemini MCP), jq plus
+      ~/.gemini/antigravity/ directory (Antigravity MCP).
+      Missing optional CLIs/tools are skipped with warnings.
 
       Math skills require Lean 4 and Lake on PATH (and
       Mathlib for the AI/ML variant) for Lean verification.
@@ -413,7 +467,10 @@ Usage(){
       from https://leanprover.github.io/ first.
 
       NOTE:
-      - codex and gemini are universal and already handled.
+      - codex and gemini are universal for the base skill
+        installation. With --repo-tools, the script also
+        performs explicit Gemini MCP registration and global
+        Graphify skill setup for Codex, Gemini, and Antigravity.
       - If installing skills for the first time, use
         the interactive install process with:
 
@@ -445,6 +502,13 @@ Usage(){
                                       Requires Lean 4 + Lake on PATH for
                                       verification (not auto-installed).
                                       Independent of --local.
+      --repo-tools                    Also install repo-analysis tools
+                                      (Graphify + GitNexus) and register
+                                      their MCP/skill integrations for
+                                      Claude Code, Codex, Gemini CLI, and
+                                      Antigravity IDE. Requires Python
+                                      >=3.10 and Node >=22. Independent
+                                      of --local and --math.
 
   Example usage:
 
@@ -459,6 +523,12 @@ Usage(){
 
       # Install everything (local + math)
       $(basename ${0}) --local --math
+
+      # Install repo tools (Graphify + GitNexus)
+      $(basename ${0}) --repo-tools
+
+      # Combined: local skills + repo tools
+      $(basename ${0}) --local --repo-tools
 
       # Print this help menu
       $(basename ${0}) --help
@@ -674,6 +744,30 @@ repo_to_git_url(){
 
 
 #######################################
+# Detects a Python interpreter on PATH
+#   with version >=3.10. Prefers `python`
+#   first so an activated conda env wins.
+# Outputs:
+#   Absolute path to interpreter on stdout
+# Returns:
+#   0 on success, 1 if no >=3.10 found
+#######################################
+detect_python_310(){
+  local candidates=(python python3 python3.13 python3.12 python3.11 python3.10)
+  local cand
+  for cand in "${candidates[@]}"; do
+    if command -v "${cand}" &>/dev/null; then
+      if "${cand}" -c 'import sys; sys.exit(0 if sys.version_info >= (3,10) else 1)' 2>/dev/null; then
+        command -v "${cand}"
+        return 0
+      fi
+    fi
+  done
+  return 1
+}
+
+
+#######################################
 # Enables a Codex plugin in
 #   ~/.codex/config.toml.
 # Arguments:
@@ -830,6 +924,204 @@ install_npm_global(){
     FAILED_NPMS+=("${pkg}")
   fi
 
+  echo
+}
+
+
+#######################################
+# Idempotently sets [features].multi_agent
+#   = true in ~/.codex/config.toml. Used
+#   by Graphify Codex parallel extraction.
+# Arguments:
+#   None
+#######################################
+enable_codex_multi_agent(){
+  local config_dir="${HOME}/.codex"
+  local config_file="${config_dir}/config.toml"
+  local tmp_file
+
+  mkdir -p "${config_dir}"
+  if [[ ! -f "${config_file}" ]]; then
+    printf '[features]\nmulti_agent = true\n' > "${config_file}"
+    return 0
+  fi
+
+  tmp_file="$(mktemp)"
+  awk '
+    $0 == "[features]" {
+      print
+      in_features = 1
+      saw_features = 1
+      next
+    }
+    in_features && /^\[/ {
+      if (!updated_multi_agent) {
+        print "multi_agent = true"
+        updated_multi_agent = 1
+      }
+      in_features = 0
+    }
+    in_features && /^multi_agent[[:space:]]*=/ {
+      if (!updated_multi_agent) {
+        print "multi_agent = true"
+        updated_multi_agent = 1
+      }
+      next
+    }
+    { print }
+    END {
+      if (in_features && !updated_multi_agent) {
+        print "multi_agent = true"
+      }
+      if (!saw_features) {
+        if (NR > 0) print ""
+        print "[features]"
+        print "multi_agent = true"
+      }
+    }
+  ' "${config_file}" > "${tmp_file}" && mv "${tmp_file}" "${config_file}"
+}
+
+
+#######################################
+# Copies Graphify's packaged skill.md into
+#   ~/.agents/skills/graphify/SKILL.md for
+#   Antigravity discovery. Avoids Graphify's
+#   project-mutating Antigravity command.
+# Arguments:
+#   python: Path to the Python interpreter
+# Globals:
+#   FAILED_REPO_TOOL_PIPS (appended on failure)
+#######################################
+install_graphify_antigravity_global(){
+  local python="${1}"
+  local target_dir="${HOME}/.agents/skills/graphify"
+  local target="${target_dir}/SKILL.md"
+  local version_file="${target_dir}/.graphify_version"
+  local tmp
+
+  mkdir -p "${target_dir}"
+  tmp="$(mktemp)"
+  if "${python}" - <<'PY' > "${tmp}"
+from importlib import resources
+import graphify
+
+content = resources.files("graphify").joinpath("skill.md").read_text(encoding="utf-8")
+frontmatter = "---\nname: graphify-manager\ndescription: Rebuild the code graph or perform manual CLI queries when MCP server is offline.\n---\n\n"
+if not content.startswith("---\n"):
+    content = frontmatter + content
+print(content, end="")
+PY
+  then
+    mv "${tmp}" "${target}"
+    "${python}" - <<'PY' > "${version_file}" 2>/dev/null || true
+import graphify
+print(getattr(graphify, "__version__", "unknown"))
+PY
+    echo_green "  -> Graphify Antigravity global skill installed at ${target}"
+    return 0
+  else
+    rm -f "${tmp}"
+    echo_red "  -> Failed to install Graphify Antigravity global skill"
+    FAILED_REPO_TOOL_PIPS+=("graphifyy (antigravity global skill)")
+    return 1
+  fi
+}
+
+
+#######################################
+# Installs a repo-tool pip package using
+#   <python> -m pip. For graphifyy, also
+#   runs documented per-platform Graphify
+#   skill registration commands.
+# Arguments:
+#   pkg:    pip package name
+#   python: Path to the Python interpreter
+# Globals:
+#   FAILED_REPO_TOOL_PIPS (appended on failure)
+#######################################
+install_repo_tool_pip(){
+  local pkg="${1}"
+  local python="${2}"
+  local -a graphify_cmd
+  local graphify_failed=false
+  local graphify_tmp
+
+  echo_blue "Installing repo-tool pip package: ${pkg}  (using ${python})"
+  if "${python}" -m pip install --upgrade "${pkg}"; then
+    echo_green "  -> ${pkg} installed successfully"
+
+    if [[ "${pkg}" == graphifyy* ]]; then
+      if command -v graphify &>/dev/null; then
+        graphify_cmd=(graphify)
+      else
+        graphify_cmd=("${python}" -m graphify)
+      fi
+
+      echo_blue "  -> Registering Graphify for Claude Code"
+      if ! "${graphify_cmd[@]}" install </dev/null; then
+        echo_red "  -> Failed to register Graphify for Claude Code"
+        FAILED_REPO_TOOL_PIPS+=("${pkg} (graphify claude install)")
+        graphify_failed=true
+      fi
+
+      echo_blue "  -> Registering Graphify for Codex"
+      if ! "${graphify_cmd[@]}" install --platform codex </dev/null; then
+        echo_red "  -> Failed to register Graphify for Codex"
+        FAILED_REPO_TOOL_PIPS+=("${pkg} (graphify codex install)")
+        graphify_failed=true
+      fi
+      if ! enable_codex_multi_agent; then
+        echo_red "  -> Failed to enable Codex multi_agent feature"
+        FAILED_REPO_TOOL_PIPS+=("${pkg} (codex multi_agent)")
+        graphify_failed=true
+      fi
+
+      echo_blue "  -> Registering Graphify for Gemini CLI"
+      graphify_tmp="$(mktemp -d)"
+      if ! (cd "${graphify_tmp}" && "${graphify_cmd[@]}" install --platform gemini </dev/null); then
+        echo_red "  -> Failed to register Graphify for Gemini CLI"
+        FAILED_REPO_TOOL_PIPS+=("${pkg} (graphify gemini install)")
+        graphify_failed=true
+      fi
+      rm -rf "${graphify_tmp}"
+
+      echo_blue "  -> Installing Graphify global skill for Antigravity"
+      if ! install_graphify_antigravity_global "${python}"; then
+        graphify_failed=true
+      fi
+
+      if [[ "${graphify_failed}" != true ]]; then
+        echo_green "  -> Graphify skill registered for Claude Code, Codex, Gemini CLI, and Antigravity"
+      fi
+    fi
+  else
+    echo_red "  -> Failed to install ${pkg}"
+    FAILED_REPO_TOOL_PIPS+=("${pkg}")
+  fi
+  echo
+}
+
+
+#######################################
+# Installs a repo-tool npm global package.
+#   Failures land in FAILED_REPO_TOOL_NPMS
+#   so the repo-tools summary can report
+#   them independently of base npm phase.
+# Arguments:
+#   pkg: npm package name
+# Globals:
+#   FAILED_REPO_TOOL_NPMS (appended on failure)
+#######################################
+install_repo_tool_npm(){
+  local pkg="${1}"
+  echo_blue "Installing repo-tool npm package: ${pkg}"
+  if npm install -g "${pkg}"; then
+    echo_green "  -> ${pkg} installed successfully"
+  else
+    echo_red "  -> Failed to install ${pkg}"
+    FAILED_REPO_TOOL_NPMS+=("${pkg}")
+  fi
   echo
 }
 
@@ -1052,6 +1344,194 @@ install_local_claude_copy_skill(){
 }
 
 
+#######################################
+# Idempotent repo-tool Claude MCP wrapper.
+#   Tries add first; treats matching entry
+#   as success; otherwise backs up config,
+#   removes-and-readds, restores backup on
+#   replacement-add failure.
+# Arguments:
+#   name:  MCP server name
+#   scope: Scope flag (user, project)
+#   cmd:   Command to run the server
+# Globals:
+#   FAILED_MCPS (appended on failure)
+#######################################
+install_repo_tool_claude_mcp(){
+  local name="${1}" scope="${2}" cmd="${3}"
+  local config="${HOME}/.claude.json"
+  local backup
+
+  echo_blue "Installing repo-tool Claude MCP: ${name}  (scope: ${scope})"
+  if claude mcp add -s "${scope}" "${name}" -- ${cmd}; then
+    echo_green "  -> Claude MCP ${name} installed successfully"
+  elif claude mcp list 2>/dev/null | grep -F "${name}" | grep -F "${cmd}" >/dev/null; then
+    echo_green "  -> Claude MCP ${name} already installed"
+  else
+    backup="$(mktemp)"
+    [[ -f "${config}" ]] && cp "${config}" "${backup}" || true
+    claude mcp remove -s "${scope}" "${name}" >/dev/null 2>&1 || true
+    if claude mcp add -s "${scope}" "${name}" -- ${cmd}; then
+      echo_green "  -> Claude MCP ${name} replaced successfully"
+    else
+      [[ -s "${backup}" ]] && cp "${backup}" "${config}"
+      echo_red "  -> Failed to install Claude MCP ${name}"
+      FAILED_MCPS+=("${name}")
+    fi
+    rm -f "${backup}"
+  fi
+  echo
+}
+
+
+#######################################
+# Idempotent repo-tool Codex MCP wrapper.
+#   Tries add first; treats matching entry
+#   as success; otherwise backs up config,
+#   removes-and-readds, restores backup on
+#   replacement-add failure.
+# Arguments:
+#   name:  MCP server name
+#   scope: (ignored — kept for array compat)
+#   cmd:   Command to run the server
+# Globals:
+#   FAILED_CODEX_MCPS (appended on failure)
+#######################################
+install_repo_tool_codex_mcp(){
+  local name="${1}" scope="${2}" cmd="${3}"  # scope ignored by codex
+  local config="${HOME}/.codex/config.toml"
+  local backup
+
+  echo_blue "Installing repo-tool Codex MCP: ${name}"
+  if codex mcp add "${name}" -- ${cmd}; then
+    echo_green "  -> Codex MCP ${name} installed successfully"
+  elif codex mcp list 2>/dev/null | grep -F "${name}" | grep -F "${cmd}" >/dev/null; then
+    echo_green "  -> Codex MCP ${name} already installed"
+  else
+    backup="$(mktemp)"
+    [[ -f "${config}" ]] && cp "${config}" "${backup}" || true
+    codex mcp remove "${name}" >/dev/null 2>&1 || true
+    if codex mcp add "${name}" -- ${cmd}; then
+      echo_green "  -> Codex MCP ${name} replaced successfully"
+    else
+      [[ -s "${backup}" ]] && cp "${backup}" "${config}"
+      echo_red "  -> Failed to install Codex MCP ${name}"
+      FAILED_CODEX_MCPS+=("${name}")
+    fi
+    rm -f "${backup}"
+  fi
+  echo
+}
+
+
+#######################################
+# Installs a single Gemini CLI MCP server
+#   using gemini mcp add. Same idempotent
+#   add/match/backup-restore pattern as
+#   Claude/Codex wrappers.
+# Arguments:
+#   name:  MCP server name
+#   scope: Scope flag (user, project)
+#   cmd:   Command to run the server
+# Globals:
+#   FAILED_GEMINI_MCPS (appended on failure)
+#######################################
+install_gemini_mcp(){
+  local name="${1}" scope="${2}" cmd="${3}"
+  local -a cmd_parts
+  local config="${HOME}/.gemini/settings.json"
+  local backup
+
+  echo_blue "Installing Gemini MCP: ${name}  (scope: ${scope})"
+  read -r -a cmd_parts <<< "${cmd}"
+  if [[ ${#cmd_parts[@]} -eq 0 ]]; then
+    echo_red "  -> Empty Gemini MCP command for ${name}"
+    FAILED_GEMINI_MCPS+=("${name} (empty command)")
+    echo
+    return
+  fi
+
+  if gemini mcp add --scope "${scope}" "${name}" "${cmd_parts[@]}"; then
+    echo_green "  -> Gemini MCP ${name} installed successfully"
+  elif gemini mcp list 2>/dev/null | grep -F "${name}" | grep -F "${cmd}" >/dev/null; then
+    echo_green "  -> Gemini MCP ${name} already installed"
+  else
+    backup="$(mktemp)"
+    [[ -f "${config}" ]] && cp "${config}" "${backup}" || true
+    gemini mcp remove --scope "${scope}" "${name}" >/dev/null 2>&1 || true
+    if gemini mcp add --scope "${scope}" "${name}" "${cmd_parts[@]}"; then
+      echo_green "  -> Gemini MCP ${name} replaced successfully"
+    else
+      [[ -s "${backup}" ]] && cp "${backup}" "${config}"
+      echo_red "  -> Failed to install Gemini MCP ${name}"
+      FAILED_GEMINI_MCPS+=("${name}")
+    fi
+    rm -f "${backup}"
+  fi
+  echo
+}
+
+
+#######################################
+# Registers an MCP server for Antigravity
+#   by merging into ~/.gemini/antigravity/
+#   mcp_config.json via jq. Idempotent
+#   assignment, preserves other keys.
+# Arguments:
+#   name: MCP server name
+#   cmd:  Command to run the server
+#         (space-separated string)
+# Globals:
+#   FAILED_ANTIGRAVITY_MCPS (appended on failure)
+#######################################
+install_antigravity_mcp(){
+  local name="${1}" cmd="${2}"
+  local config_dir="${HOME}/.gemini/antigravity"
+  local config="${config_dir}/mcp_config.json"
+  local -a cmd_parts
+
+  echo_blue "Installing Antigravity MCP: ${name}"
+
+  if ! command -v jq &>/dev/null; then
+    echo_yellow "  -> jq not found; skipping Antigravity MCP registration for ${name}"
+    FAILED_ANTIGRAVITY_MCPS+=("${name} (jq missing)")
+    echo
+    return
+  fi
+
+  if [[ ! -d "${config_dir}" ]]; then
+    echo_yellow "  -> Antigravity dir not present (${config_dir}); skipping ${name}"
+    echo
+    return
+  fi
+
+  [[ -s "${config}" ]] || echo '{"mcpServers":{}}' > "${config}"
+
+  read -r -a cmd_parts <<< "${cmd}"
+  if [[ ${#cmd_parts[@]} -eq 0 ]]; then
+    echo_red "  -> Empty Antigravity MCP command for ${name}"
+    FAILED_ANTIGRAVITY_MCPS+=("${name} (empty command)")
+    echo
+    return
+  fi
+
+  local first rest_json
+  first="${cmd_parts[0]}"
+  rest_json=$(printf '%s\n' "${cmd_parts[@]:1}" | jq -R . | jq -s .)
+  local tmp; tmp=$(mktemp)
+  if jq --arg n "${name}" --arg c "${first}" --argjson a "${rest_json}" \
+       '.mcpServers[$n] = {command:$c, args:$a}' "${config}" > "${tmp}"; then
+    mv "${tmp}" "${config}"
+    echo_green "  -> Antigravity MCP ${name} registered in ${config}"
+  else
+    rm -f "${tmp}"
+    echo_red "  -> Failed to register Antigravity MCP ${name}"
+    FAILED_ANTIGRAVITY_MCPS+=("${name}")
+  fi
+  echo
+}
+
+
 # =========================================================================
 #
 # Main function
@@ -1077,12 +1557,14 @@ main(){
 
   local install_local=false
   local install_math=false
+  local install_repo_tools=false
 
   while [[ ${#} -gt 0 ]]; do
     case "${1}" in
       -h|-help|--help) Usage; ;;
       --local) install_local=true ;;
       --math)  install_math=true ;;
+      --repo-tools) install_repo_tools=true ;;
       -*) echo_red "$(basename ${0}): Unrecognized option ${1}" >&2; Usage; ;;
       *) break ;;
     esac
@@ -1105,6 +1587,21 @@ main(){
   if ! command -v codex &>/dev/null; then
     echo_yellow "codex CLI not found — skipping Codex MCP server and plugin installation."
     local skip_codex=true
+  fi
+
+  if [[ "${install_repo_tools}" == true ]]; then
+    if ! command -v gemini &>/dev/null; then
+      echo_yellow "gemini CLI not found — skipping Gemini MCP server registration."
+      local skip_gemini=true
+    fi
+    if ! command -v jq &>/dev/null; then
+      echo_yellow "jq not found — Antigravity MCP registration will be skipped."
+      local skip_antigravity=true
+    fi
+    if [[ ! -d "${HOME}/.gemini/antigravity" ]]; then
+      echo_yellow "Antigravity IDE not detected (~/.gemini/antigravity missing) — skipping its MCP registration."
+      local skip_antigravity=true
+    fi
   fi
 
   if [[ "${install_local}" == true ]]; then
@@ -1437,6 +1934,149 @@ main(){
   fi
 
   #
+  # Install repo tools (--repo-tools only)
+  #============================
+
+  FAILED_REPO_TOOL_PIPS=()
+  FAILED_REPO_TOOL_NPMS=()
+  FAILED_GEMINI_MCPS=()
+  FAILED_ANTIGRAVITY_MCPS=()
+
+  local repo_total_pips=${#REPO_TOOL_PIP_PACKAGES[@]}
+  local repo_total_npms=${#REPO_TOOL_NPM_GLOBALS[@]}
+  local repo_total_mcps=$(( ${#REPO_TOOL_MCP_SERVERS[@]} / 3 ))
+
+  if [[ "${install_repo_tools}" == true ]]; then
+    local repo_gitnexus_ready=true
+
+    # Phase: repo-tool pip packages (Graphify)
+    if [[ ${repo_total_pips} -gt 0 ]]; then
+      echo
+      echo_blue "=========================================="
+      echo_blue " Installing ${repo_total_pips} Repo-Tool pip Package(s)"
+      echo_blue "=========================================="
+      echo
+
+      local repo_py
+      if ! repo_py="$(detect_python_310)"; then
+        echo_red "No Python >=3.10 found on PATH (checked: python, python3, python3.10–3.13)."
+        echo_red "Skipping repo-tool pip packages. Activate a conda env or install Python 3.10+."
+        FAILED_REPO_TOOL_PIPS+=("${REPO_TOOL_PIP_PACKAGES[@]}")
+      else
+        echo_blue "Using Python: ${repo_py}"
+        for pkg in "${REPO_TOOL_PIP_PACKAGES[@]}"; do
+          install_repo_tool_pip "${pkg}" "${repo_py}"
+        done
+      fi
+    fi
+
+    # Phase: repo-tool npm globals (GitNexus)
+    if [[ ${repo_total_npms} -gt 0 ]]; then
+      echo
+      echo_blue "=========================================="
+      echo_blue " Installing ${repo_total_npms} Repo-Tool npm Global(s)"
+      echo_blue "=========================================="
+      echo
+
+      local node_major
+      node_major="$(node -v 2>/dev/null | sed 's/^v\([0-9]*\).*/\1/')"
+      if [[ -z "${node_major}" ]]; then
+        echo_red "Node.js not found; GitNexus requires Node >=22. Skipping repo-tool npm packages and GitNexus MCP registration."
+        FAILED_REPO_TOOL_NPMS+=("${REPO_TOOL_NPM_GLOBALS[@]}")
+        repo_gitnexus_ready=false
+      elif [[ "${node_major}" -lt 22 ]]; then
+        echo_red "Node ${node_major} detected; GitNexus requires Node >=22. Skipping GitNexus install and MCP registration."
+        FAILED_REPO_TOOL_NPMS+=("${REPO_TOOL_NPM_GLOBALS[@]}")
+        repo_gitnexus_ready=false
+      else
+        for pkg in "${REPO_TOOL_NPM_GLOBALS[@]}"; do
+          install_repo_tool_npm "${pkg}"
+        done
+        if [[ ${#FAILED_REPO_TOOL_NPMS[@]} -gt 0 ]]; then
+          repo_gitnexus_ready=false
+        fi
+      fi
+    fi
+
+    # Phase: repo-tool MCP servers (Claude / Codex / Gemini / Antigravity)
+    if [[ "${repo_gitnexus_ready}" != true && ${repo_total_mcps} -gt 0 ]]; then
+      echo_yellow "Skipping GitNexus MCP registration because GitNexus is not available."
+      local k=0
+      while [[ ${k} -lt ${#REPO_TOOL_MCP_SERVERS[@]} ]]; do
+        local rt_name="${REPO_TOOL_MCP_SERVERS[${k}]}"
+        FAILED_MCPS+=("${rt_name} (skipped: GitNexus unavailable)")
+        FAILED_CODEX_MCPS+=("${rt_name} (skipped: GitNexus unavailable)")
+        FAILED_GEMINI_MCPS+=("${rt_name} (skipped: GitNexus unavailable)")
+        FAILED_ANTIGRAVITY_MCPS+=("${rt_name} (skipped: GitNexus unavailable)")
+        k=$(( k + 3 ))
+      done
+    else
+      if [[ "${skip_claude}" != true && ${repo_total_mcps} -gt 0 ]]; then
+        echo
+        echo_blue "=========================================="
+        echo_blue " Installing ${repo_total_mcps} Repo-Tool Claude MCP(s)"
+        echo_blue "=========================================="
+        echo
+        local k=0
+        while [[ ${k} -lt ${#REPO_TOOL_MCP_SERVERS[@]} ]]; do
+          install_repo_tool_claude_mcp \
+            "${REPO_TOOL_MCP_SERVERS[${k}]}" \
+            "${REPO_TOOL_MCP_SERVERS[$(( k + 1 ))]}" \
+            "${REPO_TOOL_MCP_SERVERS[$(( k + 2 ))]}"
+          k=$(( k + 3 ))
+        done
+      fi
+
+      if [[ "${skip_codex}" != true && ${repo_total_mcps} -gt 0 ]]; then
+        echo
+        echo_blue "=========================================="
+        echo_blue " Installing ${repo_total_mcps} Repo-Tool Codex MCP(s)"
+        echo_blue "=========================================="
+        echo
+        local k=0
+        while [[ ${k} -lt ${#REPO_TOOL_MCP_SERVERS[@]} ]]; do
+          install_repo_tool_codex_mcp \
+            "${REPO_TOOL_MCP_SERVERS[${k}]}" \
+            "${REPO_TOOL_MCP_SERVERS[$(( k + 1 ))]}" \
+            "${REPO_TOOL_MCP_SERVERS[$(( k + 2 ))]}"
+          k=$(( k + 3 ))
+        done
+      fi
+
+      if [[ "${skip_gemini}" != true && ${repo_total_mcps} -gt 0 ]]; then
+        echo
+        echo_blue "=========================================="
+        echo_blue " Installing ${repo_total_mcps} Repo-Tool Gemini MCP(s)"
+        echo_blue "=========================================="
+        echo
+        local k=0
+        while [[ ${k} -lt ${#REPO_TOOL_MCP_SERVERS[@]} ]]; do
+          install_gemini_mcp \
+            "${REPO_TOOL_MCP_SERVERS[${k}]}" \
+            "${REPO_TOOL_MCP_SERVERS[$(( k + 1 ))]}" \
+            "${REPO_TOOL_MCP_SERVERS[$(( k + 2 ))]}"
+          k=$(( k + 3 ))
+        done
+      fi
+
+      if [[ "${skip_antigravity}" != true && ${repo_total_mcps} -gt 0 ]]; then
+        echo
+        echo_blue "=========================================="
+        echo_blue " Installing ${repo_total_mcps} Repo-Tool Antigravity MCP(s)"
+        echo_blue "=========================================="
+        echo
+        local k=0
+        while [[ ${k} -lt ${#REPO_TOOL_MCP_SERVERS[@]} ]]; do
+          install_antigravity_mcp \
+            "${REPO_TOOL_MCP_SERVERS[${k}]}" \
+            "${REPO_TOOL_MCP_SERVERS[$(( k + 2 ))]}"
+          k=$(( k + 3 ))
+        done
+      fi
+    fi
+  fi
+
+  #
   # Summary
   #============================
 
@@ -1452,9 +2092,10 @@ main(){
     done
   fi
 
-  if [[ "${skip_claude}" != true && ${total_mcps} -gt 0 ]]; then
+  if [[ ( "${skip_claude}" != true && ${total_mcps} -gt 0 ) || \
+        ( "${install_repo_tools}" == true && ${repo_total_mcps} -gt 0 ) ]]; then
     if [[ ${#FAILED_MCPS[@]} -eq 0 ]]; then
-      echo_green " All ${total_mcps} Claude MCP server(s) installed successfully!"
+      echo_green " Claude MCP server(s) installed successfully!"
     else
       echo_yellow " ${#FAILED_MCPS[@]} Claude MCP server(s) failed to install:"
       for mcp in "${FAILED_MCPS[@]}"; do
@@ -1463,9 +2104,10 @@ main(){
     fi
   fi
 
-  if [[ "${skip_codex}" != true && ${total_mcps} -gt 0 ]]; then
+  if [[ ( "${skip_codex}" != true && ${total_mcps} -gt 0 ) || \
+        ( "${install_repo_tools}" == true && ${repo_total_mcps} -gt 0 ) ]]; then
     if [[ ${#FAILED_CODEX_MCPS[@]} -eq 0 ]]; then
-      echo_green " All ${total_mcps} Codex MCP server(s) installed successfully!"
+      echo_green " Codex MCP server(s) installed successfully!"
     else
       echo_yellow " ${#FAILED_CODEX_MCPS[@]} Codex MCP server(s) failed to install:"
       for mcp in "${FAILED_CODEX_MCPS[@]}"; do
@@ -1574,12 +2216,58 @@ main(){
     fi
   fi
 
+  if [[ "${install_repo_tools}" == true ]]; then
+    echo_blue " --- Repo Tools ---"
+
+    if [[ ${repo_total_pips} -gt 0 ]]; then
+      if [[ ${#FAILED_REPO_TOOL_PIPS[@]} -eq 0 ]]; then
+        echo_green " All ${repo_total_pips} repo-tool pip package(s) installed successfully!"
+      else
+        echo_yellow " ${#FAILED_REPO_TOOL_PIPS[@]} repo-tool pip step(s) failed:"
+        for pkg in "${FAILED_REPO_TOOL_PIPS[@]}"; do
+          echo_red "   - ${pkg}"
+        done
+      fi
+    fi
+
+    if [[ ${repo_total_npms} -gt 0 ]]; then
+      if [[ ${#FAILED_REPO_TOOL_NPMS[@]} -eq 0 ]]; then
+        echo_green " All ${repo_total_npms} repo-tool npm package(s) installed successfully!"
+      else
+        echo_yellow " ${#FAILED_REPO_TOOL_NPMS[@]} repo-tool npm package(s) failed:"
+        for pkg in "${FAILED_REPO_TOOL_NPMS[@]}"; do
+          echo_red "   - ${pkg}"
+        done
+      fi
+    fi
+
+    if [[ ${repo_total_mcps} -gt 0 ]]; then
+      if [[ ${#FAILED_GEMINI_MCPS[@]} -eq 0 && "${skip_gemini}" != true ]]; then
+        echo_green " All ${repo_total_mcps} Gemini MCP server(s) installed successfully!"
+      elif [[ ${#FAILED_GEMINI_MCPS[@]} -gt 0 ]]; then
+        echo_yellow " ${#FAILED_GEMINI_MCPS[@]} Gemini MCP server(s) failed to install:"
+        for mcp in "${FAILED_GEMINI_MCPS[@]}"; do
+          echo_red "   - ${mcp}"
+        done
+      fi
+
+      if [[ ${#FAILED_ANTIGRAVITY_MCPS[@]} -eq 0 && "${skip_antigravity}" != true ]]; then
+        echo_green " All ${repo_total_mcps} Antigravity MCP server(s) installed successfully!"
+      elif [[ ${#FAILED_ANTIGRAVITY_MCPS[@]} -gt 0 ]]; then
+        echo_yellow " ${#FAILED_ANTIGRAVITY_MCPS[@]} Antigravity MCP server(s) failed to install:"
+        for mcp in "${FAILED_ANTIGRAVITY_MCPS[@]}"; do
+          echo_red "   - ${mcp}"
+        done
+      fi
+    fi
+  fi
+
   echo_blue "=========================================="
   echo
   echo_green "Installed skills can be listed with: npx skills list --global"
 
   # Exit with failure if any skills, MCPs, npm/pip packages, or plugins failed
-  if [[ ${#FAILED_SKILLS[@]} -gt 0 || ${#FAILED_MCPS[@]} -gt 0 || ${#FAILED_CODEX_MCPS[@]} -gt 0 || ${#FAILED_NPMS[@]} -gt 0 || ${#FAILED_AGENTS_COPY_SKILLS[@]} -gt 0 || ${#FAILED_PIPS[@]} -gt 0 || ${#FAILED_COPY_SKILLS[@]} -gt 0 || ${#FAILED_COPY_SKILLS_ALWAYS[@]} -gt 0 || ${#FAILED_MATH_COPY_SKILLS[@]} -gt 0 || ${#FAILED_CLAUDE_COPY_SKILLS[@]} -gt 0 || ${#FAILED_PLUGINS[@]} -gt 0 || ${#FAILED_CODEX_PLUGINS[@]} -gt 0 ]]; then
+  if [[ ${#FAILED_SKILLS[@]} -gt 0 || ${#FAILED_MCPS[@]} -gt 0 || ${#FAILED_CODEX_MCPS[@]} -gt 0 || ${#FAILED_NPMS[@]} -gt 0 || ${#FAILED_AGENTS_COPY_SKILLS[@]} -gt 0 || ${#FAILED_PIPS[@]} -gt 0 || ${#FAILED_COPY_SKILLS[@]} -gt 0 || ${#FAILED_COPY_SKILLS_ALWAYS[@]} -gt 0 || ${#FAILED_MATH_COPY_SKILLS[@]} -gt 0 || ${#FAILED_CLAUDE_COPY_SKILLS[@]} -gt 0 || ${#FAILED_PLUGINS[@]} -gt 0 || ${#FAILED_CODEX_PLUGINS[@]} -gt 0 || ${#FAILED_REPO_TOOL_PIPS[@]} -gt 0 || ${#FAILED_REPO_TOOL_NPMS[@]} -gt 0 || ${#FAILED_GEMINI_MCPS[@]} -gt 0 || ${#FAILED_ANTIGRAVITY_MCPS[@]} -gt 0 ]]; then
     exit 1
   fi
 
