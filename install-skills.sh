@@ -62,9 +62,6 @@ SKILLS=(
 
   # --- CLI ---
   "hkuds/cli-anything"                                                          "cli-anything"
-
-  # --- Project management ---
-  "https://github.com/ctsstc/get-shit-done-skills.git"                          "gsd"
 )
 
 
@@ -207,6 +204,33 @@ COPY_SKILLS=(
   # --- Research engineering ---
   "${SCRIPT_DIR}/skills/research-engineer-ai-ml"                                "research-engineer-ai-ml"
 )
+
+# Patched fork of ctsstc/get-shit-done-skills vendored as a submodule
+# (removes .env* glob + "Secrets location" template — secret-leak fix).
+# If the submodule is uninitialized we skip installing the patched copy
+# AND remove any pre-existing upstream-installed gsd so the user is not
+# left running the unsafe upstream skill.
+GSD_SUBMODULE="${SCRIPT_DIR}/submodules/get-shit-done-skills"
+GSD_SOURCE="${GSD_SUBMODULE}/.kilocode/skills/gsd"
+GSD_VULN_FILE="${GSD_SOURCE}/agents/codebase-mapper/SKILL.md"
+if [[ -f "${GSD_VULN_FILE}" ]]; then
+  COPY_SKILLS+=("${GSD_SOURCE}" "gsd")
+else
+  # NOTE: echo_yellow is defined later in the script, so this block uses
+  # plain echo with inline ANSI yellow to stay independent of helper order.
+  printf '\033[33m%s\033[0m\n' "Note: submodules/get-shit-done-skills is not initialized — skipping gsd."
+  printf '\033[33m%s\033[0m\n' "  To enable, run: git submodule update --init --recursive"
+  # Fail-closed: remove stale upstream-installed gsd to prevent the
+  # vulnerable version from continuing to be active after the swap.
+  for stale in "${HOME}/.agents/skills/gsd" \
+               "${HOME}/.claude/skills/gsd" \
+               "${HOME}/.gemini/antigravity/skills/gsd"; do
+    if [[ -e "${stale}" || -L "${stale}" ]]; then
+      printf '\033[33m%s\033[0m\n' "  Removing stale gsd install: ${stale}"
+      rm -rf "${stale}"
+    fi
+  done
+fi
 
 
 # =========================================================================

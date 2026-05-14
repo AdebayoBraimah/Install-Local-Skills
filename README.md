@@ -45,11 +45,35 @@ When `--math` is passed, **one additional phase** runs:
   npx skills add https://github.com/vercel-labs/skills --skill find-skills
   ```
 
+## Cloning with Submodules
+
+This repo vendors a patched fork of `get-shit-done-skills` as a git submodule under `submodules/get-shit-done-skills`. Clone with submodules so the `gsd` skill installs correctly:
+
+```bash
+git clone --recurse-submodules https://github.com/AdebayoBraimah/Install-Local-Skills.git
+```
+
+If you already cloned without `--recurse-submodules`:
+
+```bash
+git submodule update --init --recursive
+```
+
+To pull future updates from the fork:
+
+```bash
+git submodule update --remote submodules/get-shit-done-skills
+git add submodules/get-shit-done-skills
+git commit -m "MNT: Bumped get-shit-done-skills submodule"
+```
+
+If the submodule is left uninitialized, `install-skills.sh` skips the patched `gsd` and **removes any previously installed upstream `gsd`** so users do not keep running the leaky version.
+
 ## Usage
 
 ```bash
-# Clone the repo
-git clone https://github.com/AdebayoBraimah/Install-Local-Skills.git
+# Clone the repo (recurse-submodules pulls the patched gsd fork)
+git clone --recurse-submodules https://github.com/AdebayoBraimah/Install-Local-Skills.git
 cd Install-Local-Skills
 
 # Make the script executable (one-time)
@@ -132,7 +156,7 @@ If any skills, MCP servers, npm packages, or plugins fail, the summary lists the
 | Documentation | `context7` | intellectronica/agent-skills |
 | Writing | `humanizer` | davila7/claude-code-templates |
 | CLI | `cli-anything` | hkuds/cli-anything |
-| Project management | `gsd` | ctsstc/get-shit-done-skills |
+| Project management | `gsd` | submodules/get-shit-done-skills (patched fork of ctsstc/get-shit-done-skills) |
 
 ## Claude Code Plugins
 
@@ -201,6 +225,8 @@ Copied into `~/.agents/skills/` AND symlinked into `~/.claude/skills/` and `~/.g
 |---|---|---|---|
 | Visualization | `data-viz` | `skills/data-viz/` | Customized variant of upstream `data-visualization` extended for ML, statistical, high-dimensional, scalable, and publication workflows. Both skills are installed; trigger by name. |
 | Research engineering | `research-engineer-ai-ml` | `skills/research-engineer-ai-ml/` | AI/ML research engineering: reproducible experiments, baselines/ablations, PyTorch/JAX implementation plans |
+
+> **Note:** `gsd` is conditionally appended to the shared copy-skills set from the patched submodule at `submodules/get-shit-done-skills/.kilocode/skills/gsd`. See [Cloning with Submodules](#cloning-with-submodules) — if the submodule is not initialized, the install script skips `gsd` and removes any stale upstream-installed copy.
 
 > **Note:** `mathematician-ai-ml-workspace` (under `~/.agents/skills/`) is a Lean scratch workspace, not a skill — intentionally excluded from bundling.
 
