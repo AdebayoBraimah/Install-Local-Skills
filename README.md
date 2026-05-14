@@ -376,6 +376,8 @@ What gets installed:
 
 > **Not part of global install:** `graphify extract`, `graphify gemini install`, `graphify antigravity install`, and `gitnexus analyze` are per-repo bootstrap commands the user runs inside target projects.
 
+> **Choosing between them:** See [docs/repo-tools-guide.md](docs/repo-tools-guide.md) for a comparison of Graphify vs GitNexus and which to reach for during repo init and maintenance (TL;DR: GitNexus as the primary context engine for agentic monorepo coding; Graphify as a complementary multimodal documentation/research layer).
+
 ### Verifying Repo Tools
 
 After running `./install-skills.sh --repo-tools`:
