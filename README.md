@@ -357,8 +357,8 @@ Installed only when `--repo-tools` is passed. The flag is independent of `--loca
 
 | Tool | Package | Source | Description |
 |---|---|---|---|
-| Graphify | `graphifyy[mcp]` (pip) | [PyPI](https://pypi.org/project/graphifyy/) | Builds queryable code knowledge graphs; installs global skill files for Claude Code, Codex, Gemini CLI, and Antigravity. |
-| GitNexus | `gitnexus` (npm) | [npm](https://www.npmjs.com/package/gitnexus) | 16-tool code-intelligence MCP server, exposed via `gitnexus mcp`. |
+| [Graphify](https://graphify.net/#features) | `graphifyy[mcp]` (pip) | [PyPI](https://pypi.org/project/graphifyy/) | Builds queryable code knowledge graphs; installs global skill files for Claude Code, Codex, Gemini CLI, and Antigravity. |
+| [GitNexus](https://github.com/abhigyanpatwari/GitNexus) | `gitnexus` (npm) | [npm](https://www.npmjs.com/package/gitnexus) | 16-tool code-intelligence MCP server, exposed via `gitnexus mcp`. |
 
 What gets installed:
 
