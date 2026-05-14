@@ -266,6 +266,34 @@ LOCAL_SKILLS=(
 
 # =========================================================================
 #
+# Engineering-skills registry (installed with --eng / --engineering)
+#
+#   Opinionated workflow skills from Matt Pocock's mattpocock/skills
+#   repo. Gated behind --eng / --engineering because these are
+#   workflow-shaping (TDD, grilling, PRDs) rather than baseline utilities.
+#   The --eng flag is independent of --local, --math, and --repo-tools.
+#   Each entry is a pair of lines: <repo> followed by <skill-name>.
+#
+# =========================================================================
+
+ENGINEERING_SKILLS=(
+  # setup-matt-pocock-skills MUST run once per project before first use
+  # of the other 8 — it provisions the AGENTS.md/CLAUDE.md agent-skills
+  # block and docs/agents/ layout the rest depend on.
+  "mattpocock/skills"                                                           "setup-matt-pocock-skills"
+  "mattpocock/skills"                                                           "tdd"
+  "mattpocock/skills"                                                           "diagnose"
+  "mattpocock/skills"                                                           "grill-me"
+  "mattpocock/skills"                                                           "grill-with-docs"
+  "mattpocock/skills"                                                           "improve-codebase-architecture"
+  "mattpocock/skills"                                                           "triage"
+  "mattpocock/skills"                                                           "zoom-out"
+  "mattpocock/skills"                                                           "to-prd"
+)
+
+
+# =========================================================================
+#
 # Local-only pip packages (installed with --local)
 #
 #   Each entry is a single pip package name to install.
@@ -436,6 +464,18 @@ Usage(){
       The --math flag is independent of --local; either or
       both may be passed.
 
+      When --eng (or --engineering) is passed, one additional
+      phase runs:
+
+        - Engineering skills — via npx skills add (Matt
+          Pocock's opinionated TDD, diagnose, grill-me,
+          grill-with-docs, improve-codebase-architecture,
+          triage, zoom-out, to-prd, and the
+          setup-matt-pocock-skills bootstrap).
+
+      --eng is independent of --local, --math, and
+      --repo-tools.
+
       When --repo-tools is passed, the following additional
       phases run:
 
@@ -509,6 +549,11 @@ Usage(){
                                       Antigravity IDE. Requires Python
                                       >=3.10 and Node >=22. Independent
                                       of --local and --math.
+      --eng, --engineering            Also install Matt Pocock's
+                                      engineering-discipline skills
+                                      (TDD, grill-me, triage, etc.).
+                                      Independent of --local, --math,
+                                      and --repo-tools.
 
   Example usage:
 
@@ -529,6 +574,9 @@ Usage(){
 
       # Combined: local skills + repo tools
       $(basename ${0}) --local --repo-tools
+
+      # Install all skills including engineering skills
+      $(basename ${0}) --eng
 
       # Print this help menu
       $(basename ${0}) --help
@@ -1558,6 +1606,7 @@ main(){
   local install_local=false
   local install_math=false
   local install_repo_tools=false
+  local install_engineering=false
 
   while [[ ${#} -gt 0 ]]; do
     case "${1}" in
@@ -1565,6 +1614,7 @@ main(){
       --local) install_local=true ;;
       --math)  install_math=true ;;
       --repo-tools) install_repo_tools=true ;;
+      --eng|--engineering) install_engineering=true ;;
       -*) echo_red "$(basename ${0}): Unrecognized option ${1}" >&2; Usage; ;;
       *) break ;;
     esac
@@ -1612,6 +1662,10 @@ main(){
 
     # Merge local skills into main skills array
     SKILLS+=("${LOCAL_SKILLS[@]}")
+  fi
+
+  if [[ "${install_engineering}" == true ]]; then
+    SKILLS+=("${ENGINEERING_SKILLS[@]}")
   fi
 
   #

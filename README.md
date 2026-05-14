@@ -29,6 +29,12 @@ When `--math` is passed, **one additional phase** runs:
 
 `--math` is independent of `--local`; either or both may be passed.
 
+When `--eng` (or `--engineering`) is passed, **one additional phase** runs:
+
+- **Engineering skills** — via `npx skills add` (Matt Pocock's opinionated TDD/grill-me/triage/etc.)
+
+`--eng` is independent of `--local`, `--math`, and `--repo-tools`; any combination may be passed.
+
 > **Note:** Phase 1 requires `npx`. Phases 2 and 8 require the `claude` CLI. Phases 3 and 9 require the `codex` CLI. The `--local` pip phase requires `pip`. The `--math` phase requires Lean 4 + Lake on PATH for runtime verification (not auto-installed). Missing CLIs cause the corresponding phases to be skipped. codex and gemini are universal agents and are already handled by `skills.sh` — no extra steps needed.
 
 ## Prerequisites
@@ -114,6 +120,9 @@ chmod +x install-skills.sh
 
 # Combined: local skills + repo tools
 ./install-skills.sh --local --repo-tools
+
+# Install all skills including engineering skills
+./install-skills.sh --eng
 
 # Print the help menu
 ./install-skills.sh --help
@@ -350,6 +359,32 @@ elan self uninstall
 ```
 
 This removes `~/.elan/`, all installed toolchains, and the PATH shim.
+
+## Engineering Skills (`--eng` / `--engineering`)
+
+Installed only when `--eng` (or its long form `--engineering`) is passed. The flag is independent of `--local`, `--math`, and `--repo-tools`; any combination may be passed.
+
+These are Matt Pocock's opinionated workflow skills from [`mattpocock/skills`](https://github.com/mattpocock/skills) — an "anti-failure" toolkit targeting misalignment, verbosity, broken code, and architectural decay. They are gated rather than always-on because they shape the agent's working style (TDD, adversarial grilling, PRD-first issue management), not because they're optional utilities.
+
+| Category | Skill | Source | Description |
+|---|---|---|---|
+| Engineering discipline | `setup-matt-pocock-skills` | [mattpocock/skills](https://github.com/mattpocock/skills) | **Per-project bootstrap** — provisions the `## Agent skills` block in `AGENTS.md`/`CLAUDE.md` and the `docs/agents/` layout that the other 8 rely on. Run once per project before first use. |
+| Engineering discipline | `tdd` | [mattpocock/skills](https://github.com/mattpocock/skills) | Red-green-refactor loop discipline |
+| Engineering discipline | `diagnose` | [mattpocock/skills](https://github.com/mattpocock/skills) | Structured debugging for bugs and performance regressions |
+| Engineering discipline | `grill-me` | [mattpocock/skills](https://github.com/mattpocock/skills) | Adversarial questioning to drive alignment before coding |
+| Engineering discipline | `grill-with-docs` | [mattpocock/skills](https://github.com/mattpocock/skills) | Same loop, but updates the project's `CONTEXT.md` |
+| Engineering discipline | `improve-codebase-architecture` | [mattpocock/skills](https://github.com/mattpocock/skills) | Identifies structural improvement opportunities |
+| Engineering discipline | `triage` | [mattpocock/skills](https://github.com/mattpocock/skills) | Issue management via state machines |
+| Engineering discipline | `zoom-out` | [mattpocock/skills](https://github.com/mattpocock/skills) | Adds system-wide context to a code section |
+| Engineering discipline | `to-prd` | [mattpocock/skills](https://github.com/mattpocock/skills) | Converts conversations into PRDs + GitHub issues |
+
+> **Engineering-discipline skills (`mattpocock/skills`):** `grill-me` lives under upstream `productivity/`, not `engineering/`. It is grouped here for workflow coherence — the bundle is intentionally cross-folder.
+
+> **Bootstrap reminder:** After installation, run `setup-matt-pocock-skills` **once per project** before first use of the other 8. It writes the `AGENTS.md`/`CLAUDE.md` agent-skills block and `docs/agents/` layout the rest depend on; 7 of the 8 will silently degrade without it.
+
+> **Excluded by design:** `to-issues` (the natural successor to `to-prd`) is omitted to keep the bundle scoped to discipline rather than issue tracking. Install it manually if needed: `npx skills add mattpocock/skills --skill to-issues`.
+
+> **Choosing when to invoke:** See [docs/mattpocock-skills-guide.md](docs/mattpocock-skills-guide.md) for per-skill triggers and how the 9 compose into one workflow.
 
 ## Repo Tools (`--repo-tools`)
 
