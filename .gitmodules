@@ -2,3 +2,7 @@
 	path = submodules/get-shit-done-skills
 	url = https://github.com/AdebayoBraimah/get-shit-done-skills.git
 	branch = main
+[submodule "submodules/claude-deep-research-skill"]
+	path = submodules/claude-deep-research-skill
+	url = https://github.com/AdebayoBraimah/claude-deep-research-skill.git
+	branch = main

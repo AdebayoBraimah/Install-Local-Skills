@@ -47,7 +47,14 @@ When `--math` is passed, **one additional phase** runs:
 
 ## Cloning with Submodules
 
-This repo vendors a patched fork of `get-shit-done-skills` as a git submodule under `submodules/get-shit-done-skills`. Clone with submodules so the `gsd` skill installs correctly:
+This repo vendors two skills as git submodules under `submodules/`:
+
+| Submodule | Skill | Why vendored |
+|---|---|---|
+| `submodules/get-shit-done-skills` | `gsd` | Patched fork of `ctsstc/get-shit-done-skills` — fixes a secret-leak in `agents/codebase-mapper/SKILL.md` |
+| `submodules/claude-deep-research-skill` | `deep-research-academic` | Pinned to a known commit for reproducible installs of `AdebayoBraimah/claude-deep-research-skill` |
+
+Clone with submodules so both skills install correctly:
 
 ```bash
 git clone --recurse-submodules https://github.com/AdebayoBraimah/Install-Local-Skills.git
@@ -59,20 +66,26 @@ If you already cloned without `--recurse-submodules`:
 git submodule update --init --recursive
 ```
 
-To pull future updates from the fork:
+To pull future updates from a vendored fork:
 
 ```bash
+# get-shit-done-skills
 git submodule update --remote submodules/get-shit-done-skills
 git add submodules/get-shit-done-skills
 git commit -m "MNT: Bumped get-shit-done-skills submodule"
+
+# claude-deep-research-skill
+git submodule update --remote submodules/claude-deep-research-skill
+git add submodules/claude-deep-research-skill
+git commit -m "MNT: Bumped claude-deep-research-skill submodule"
 ```
 
-If the submodule is left uninitialized, `install-skills.sh` skips the patched `gsd` and **removes any previously installed upstream `gsd`** so users do not keep running the leaky version.
+If a submodule is left uninitialized, `install-skills.sh` skips the corresponding skill. For `gsd`, the script additionally **removes any previously installed upstream `gsd`** so users do not keep running the leaky version. For `deep-research-academic`, any prior install is left untouched.
 
 ## Usage
 
 ```bash
-# Clone the repo (recurse-submodules pulls the patched gsd fork)
+# Clone the repo (recurse-submodules pulls the vendored skill forks)
 git clone --recurse-submodules https://github.com/AdebayoBraimah/Install-Local-Skills.git
 cd Install-Local-Skills
 
@@ -146,7 +159,7 @@ If any skills, MCP servers, npm packages, or plugins fail, the summary lists the
 | Notifications | `ntfy-notify` | gitstua/stu-skills |
 | Research | `deep-research` | shubhamsaboo/awesome-llm-apps |
 | Research | `academic-researcher` | shubhamsaboo/awesome-llm-apps |
-| Research | `deep-research-academic` | AdebayoBraimah/claude-deep-research-skill |
+| Research | `deep-research-academic` | submodules/claude-deep-research-skill (vendored fork of AdebayoBraimah/claude-deep-research-skill) |
 | Research | `research-paper-writer` | ailabs-393/ai-labs-claude-skills |
 | Research | `web-research` | langchain-ai/deepagents |
 | Research | `research-engineer` | davila7/claude-code-templates |
@@ -227,6 +240,8 @@ Copied into `~/.agents/skills/` AND symlinked into `~/.claude/skills/` and `~/.g
 | Research engineering | `research-engineer-ai-ml` | `skills/research-engineer-ai-ml/` | AI/ML research engineering: reproducible experiments, baselines/ablations, PyTorch/JAX implementation plans |
 
 > **Note:** `gsd` is conditionally appended to the shared copy-skills set from the patched submodule at `submodules/get-shit-done-skills/.kilocode/skills/gsd`. See [Cloning with Submodules](#cloning-with-submodules) — if the submodule is not initialized, the install script skips `gsd` and removes any stale upstream-installed copy.
+
+> **Note:** `deep-research-academic` is conditionally appended to the shared copy-skills set from the submodule at `submodules/claude-deep-research-skill`. See [Cloning with Submodules](#cloning-with-submodules) — if the submodule is not initialized, the install script skips it and leaves any prior install untouched.
 
 > **Note:** `mathematician-ai-ml-workspace` (under `~/.agents/skills/`) is a Lean scratch workspace, not a skill — intentionally excluded from bundling.
 

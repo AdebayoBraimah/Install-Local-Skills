@@ -40,7 +40,6 @@ SKILLS=(
   # --- Research ---
   "shubhamsaboo/awesome-llm-apps"                                              "deep-research"
   "shubhamsaboo/awesome-llm-apps"                                              "academic-researcher"
-  "https://github.com/AdebayoBraimah/claude-deep-research-skill.git"           "deep-research-academic"
   "ailabs-393/ai-labs-claude-skills"                                            "research-paper-writer"
   "langchain-ai/deepagents"                                                     "web-research"
   "davila7/claude-code-templates"                                               "research-engineer"
@@ -230,6 +229,20 @@ else
       rm -rf "${stale}"
     fi
   done
+fi
+
+# AdebayoBraimah/claude-deep-research-skill vendored as a submodule so the
+# installed copy is pinned to a known commit rather than tracking the
+# remote main branch via `npx skills add`. If the submodule is
+# uninitialized, skip and leave any prior install untouched (no fail-closed
+# cleanup — this fork has no known security issue).
+DRA_SUBMODULE="${SCRIPT_DIR}/submodules/claude-deep-research-skill"
+DRA_PROBE="${DRA_SUBMODULE}/SKILL.md"
+if [[ -f "${DRA_PROBE}" ]]; then
+  COPY_SKILLS+=("${DRA_SUBMODULE}" "deep-research-academic")
+else
+  printf '\033[33m%s\033[0m\n' "Note: submodules/claude-deep-research-skill is not initialized — skipping deep-research-academic."
+  printf '\033[33m%s\033[0m\n' "  To enable, run: git submodule update --init --recursive"
 fi
 
 
@@ -907,6 +920,10 @@ install_local_copy_skill(){
     return
   fi
 
+  # Strip any .git gitlink/dir copied from a submodule-rooted source — the
+  # installed skill should never carry references back to its submodule.
+  rm -rf "${target_dir}/.git"
+
   echo_green "  -> Copied to ${target_dir}"
 
   # Create symlink in ~/.claude/skills/
@@ -975,6 +992,9 @@ install_agents_copy_skill(){
     return
   fi
 
+  # Strip any .git gitlink/dir copied from a submodule-rooted source.
+  rm -rf "${target_dir}/.git"
+
   echo_green "  -> Copied to ${target_dir}"
   echo_green "  -> ${skill_name} installed successfully"
   echo
@@ -1022,6 +1042,9 @@ install_local_claude_copy_skill(){
     echo
     return
   fi
+
+  # Strip any .git gitlink/dir copied from a submodule-rooted source.
+  rm -rf "${target_dir}/.git"
 
   echo_green "  -> Copied to ${target_dir}"
   echo_green "  -> ${skill_name} installed successfully"
