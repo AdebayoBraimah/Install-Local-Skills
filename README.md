@@ -128,6 +128,23 @@ chmod +x install-skills.sh
 ./install-skills.sh --help
 ```
 
+## Getting Started Workflows
+
+Start with the workflow guide that matches the project state:
+
+- [New project workflow](docs/getting-started-new-project.md) — bootstrap a
+  greenfield project, clarify intent, turn requirements into work, then build
+  with TDD.
+- [Existing project workflow](docs/getting-started-existing-project.md) —
+  orient in a brownfield repo, index and analyze the codebase, zoom out before
+  edits, diagnose unclear failures, then change safely.
+
+Use the deeper references when you need details about individual skills or
+repo-tool behavior:
+
+- [Engineering Skills Guide: Matt Pocock's `mattpocock/skills`](docs/mattpocock-skills-guide.md)
+- [Repo Tools Guide: Choosing Between Graphify and GitNexus](docs/repo-tools-guide.md)
+
 ## Runtime Examples
 
 Running the script prints a progress banner, per-skill status, and a final summary:
