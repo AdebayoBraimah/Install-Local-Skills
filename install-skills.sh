@@ -190,7 +190,11 @@ CLAUDE_COPY_SKILLS=(
 #   These are local skill directories that are copied into
 #   ~/.agents/skills/<skill-name>/ AND symlinked into:
 #     - ~/.claude/skills/<skill-name>
-#     - ~/.gemini/antigravity/skills/<skill-name>
+#
+#   Gemini CLI and Antigravity IDE discover skills from
+#   ~/.agents/skills/ directly. Prior ~/.gemini/antigravity/skills/
+#   symlinks (from earlier versions of this script) are cleaned up
+#   on the next install when they point at the canonical target.
 #
 #   Always installed (no --local flag required).
 #
@@ -314,9 +318,13 @@ LOCAL_PIP_PACKAGES=(
 #
 #   Each entry is a pair: <source-path> followed by <skill-name>.
 #   These are local skill directories that are copied into
-#   ~/.agents/skills/<skill-name>/ and sym-linked to:
+#   ~/.agents/skills/<skill-name>/ AND symlinked into:
 #     - ~/.claude/skills/<skill-name>
-#     - ~/.gemini/antigravity/skills/<skill-name>
+#
+#   Gemini CLI and Antigravity IDE discover skills from
+#   ~/.agents/skills/ directly. Prior ~/.gemini/antigravity/skills/
+#   symlinks (from earlier versions of this script) are cleaned up
+#   on the next install when they point at the canonical target.
 #
 #   Only installed when the --local flag is passed.
 #
@@ -354,7 +362,11 @@ LOCAL_CLAUDE_COPY_SKILLS=(
 #   These are local skill directories that are copied into
 #   ~/.agents/skills/<skill-name>/ AND symlinked into:
 #     - ~/.claude/skills/<skill-name>
-#     - ~/.gemini/antigravity/skills/<skill-name>
+#
+#   Gemini CLI and Antigravity IDE discover skills from
+#   ~/.agents/skills/ directly. Prior ~/.gemini/antigravity/skills/
+#   symlinks (from earlier versions of this script) are cleaned up
+#   on the next install when they point at the canonical target.
 #
 #   Only installed when the --math flag is passed. The --math flag is
 #   independent of --local; either or both may be passed.
@@ -1212,8 +1224,13 @@ install_pip_package(){
 #######################################
 # Installs a local skill by copying it
 #   into ~/.agents/skills/ and creating
-#   symlinks in ~/.claude/skills/ and
-#   ~/.gemini/antigravity/skills/.
+#   a symlink in ~/.claude/skills/.
+#
+#   Note: Gemini CLI and Antigravity IDE
+#   discover skills from the canonical
+#   ~/.agents/skills/ directory directly;
+#   the historical ~/.gemini/antigravity/skills/
+#   symlinks are no longer created.
 # Arguments:
 #   source_path: Absolute path to the
 #                local skill directory
@@ -1233,7 +1250,6 @@ install_local_copy_skill(){
   local agents_dir="${HOME}/.agents/skills"
   local target_dir="${agents_dir}/${skill_name}"
   local claude_dir="${HOME}/.claude/skills"
-  local gemini_dir="${HOME}/.gemini/antigravity/skills"
   declare -n failed_ref="${failed_var}"
 
   echo_blue "Installing local skill: ${skill_name}  (from ${source_path})"
@@ -1266,6 +1282,16 @@ install_local_copy_skill(){
 
   echo_green "  -> Copied to ${target_dir}"
 
+  # One-time cleanup: remove any antigravity symlink left from prior installs
+  # ONLY when it is a symlink pointing at the canonical target. Real files,
+  # directories, or symlinks pointing elsewhere are left untouched.
+  local stale_gemini="${HOME}/.gemini/antigravity/skills/${skill_name}"
+  local expected_target="../../../.agents/skills/${skill_name}"
+  if [[ -L "${stale_gemini}" && "$(readlink "${stale_gemini}")" == "${expected_target}" ]]; then
+    rm -f "${stale_gemini}"
+    echo_yellow "  -> Cleaned stale antigravity symlink: ${stale_gemini}"
+  fi
+
   # Create symlink in ~/.claude/skills/
   mkdir -p "${claude_dir}"
 
@@ -1275,16 +1301,6 @@ install_local_copy_skill(){
 
   ln -s "../../.agents/skills/${skill_name}" "${claude_dir}/${skill_name}"
   echo_green "  -> Symlinked: ${claude_dir}/${skill_name}"
-
-  # Create symlink in ~/.gemini/antigravity/skills/
-  mkdir -p "${gemini_dir}"
-
-  if [[ -e "${gemini_dir}/${skill_name}" || -L "${gemini_dir}/${skill_name}" ]]; then
-    rm -rf "${gemini_dir}/${skill_name}"
-  fi
-
-  ln -s "../../../.agents/skills/${skill_name}" "${gemini_dir}/${skill_name}"
-  echo_green "  -> Symlinked: ${gemini_dir}/${skill_name}"
 
   echo_green "  -> ${skill_name} installed successfully"
   echo

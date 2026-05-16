@@ -12,7 +12,7 @@ The script runs **nine always-on installation phases**:
 4. **npm global packages** — via `npm install -g`
 5. **Agents-only copy skills** — copy to `~/.agents/skills/` only (no symlinks)
 6. **Claude-only copy skills** — copy to `~/.claude/skills/` only
-7. **Shared copy skills** — copy to `~/.agents/skills/` + symlinks to `~/.claude/skills/` and `~/.gemini/antigravity/skills/`
+7. **Shared copy skills** — copy to `~/.agents/skills/` + symlink to `~/.claude/skills/` (Gemini CLI and Antigravity IDE discover via the canonical `~/.agents/skills/` path)
 8. **Claude Code plugins** — via `claude plugin marketplace add` + `claude plugin install`
 9. **Codex plugins** — via shallow repo clone + `~/.codex/config.toml` enablement
 
@@ -269,7 +269,7 @@ Copied directly into `~/.claude/skills/` only. These are exclusive to Claude Cod
 
 ### Shared Skills
 
-Copied into `~/.agents/skills/` AND symlinked into `~/.claude/skills/` and `~/.gemini/antigravity/skills/`. Always installed.
+Copied into `~/.agents/skills/` AND symlinked into `~/.claude/skills/`. Gemini CLI and Antigravity IDE discover skills via `~/.agents/skills/` directly. Always installed.
 
 | Category | Skill | Source | Description |
 |---|---|---|---|
@@ -482,7 +482,7 @@ Installed via `npx skills add` (same as standard skills, but only with `--local`
 
 ### Local Copy Skills
 
-Skills bundled in the `skills/` directory of this repo. These are copied into `~/.agents/skills/` and symlinked to agent directories (`~/.claude/skills/`, `~/.gemini/antigravity/skills/`).
+Skills bundled in the `skills/` directory of this repo. These are copied into `~/.agents/skills/` and symlinked into `~/.claude/skills/`. Gemini CLI and Antigravity IDE discover them via the canonical `~/.agents/skills/` path.
 
 | Category | Skill | Source | Description |
 |---|---|---|---|
@@ -555,10 +555,12 @@ There are five copy skill arrays, each targeting a different destination and gat
 |---|---|---|---|
 | `AGENTS_COPY_SKILLS` | `~/.agents/skills/` | none | always |
 | `CLAUDE_COPY_SKILLS` | `~/.claude/skills/` | none | always |
-| `COPY_SKILLS` | `~/.agents/skills/` | `~/.claude/skills/`, `~/.gemini/antigravity/skills/` | always |
-| `LOCAL_COPY_SKILLS` | `~/.agents/skills/` | `~/.claude/skills/`, `~/.gemini/antigravity/skills/` | `--local` |
+| `COPY_SKILLS` | `~/.agents/skills/` | `~/.claude/skills/` | always |
+| `LOCAL_COPY_SKILLS` | `~/.agents/skills/` | `~/.claude/skills/` | `--local` |
 | `LOCAL_CLAUDE_COPY_SKILLS` | `~/.claude/skills/` | none | `--local` |
-| `MATH_COPY_SKILLS` | `~/.agents/skills/` | `~/.claude/skills/`, `~/.gemini/antigravity/skills/` | `--math` |
+| `MATH_COPY_SKILLS` | `~/.agents/skills/` | `~/.claude/skills/` | `--math` |
+
+> **Note:** Gemini CLI and Antigravity IDE discover skills directly from `~/.agents/skills/`, so no symlink under `~/.gemini/antigravity/skills/` is needed. Prior script-created entries there are cleaned up on the next install when they point at the canonical target.
 
 > **Repo as source of truth:** Each install run overwrites the matching `~/.agents/skills/<name>/` entries with the bundled copies in this repo. To promote a local edit back into the repo, copy from `~/.agents/skills/<name>/` into `skills/<name>/`, re-run the path-portability rewrite, and commit. Skills are overwritten only when their gating flag matches:
 >
