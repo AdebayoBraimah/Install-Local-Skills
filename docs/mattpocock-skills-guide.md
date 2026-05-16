@@ -1,10 +1,10 @@
 # Engineering Skills Guide: Matt Pocock's `mattpocock/skills`
 
-The 9 skills installed by `./install-skills.sh --eng` are a curated subset of [`mattpocock/skills`](https://github.com/mattpocock/skills), Matt Pocock's "anti-failure toolkit" for coding agents. They target four recurring failure modes: **misalignment** (the agent builds the wrong thing), **verbosity** (rambling code or comments), **non-functional code** (passes locally, breaks elsewhere), and **architectural decay** (small additions that erode structure over time).
+The 13 skills installed by `./install-skills.sh --eng` are a curated subset of [`mattpocock/skills`](https://github.com/mattpocock/skills), Matt Pocock's "anti-failure toolkit" for coding agents. They target four recurring failure modes: **misalignment** (the agent builds the wrong thing), **verbosity** (rambling code or comments), **non-functional code** (passes locally, breaks elsewhere), and **architectural decay** (small additions that erode structure over time).
 
 ## Per-project bootstrap
 
-**Before first use in any new project, run `setup-matt-pocock-skills` once.** It provisions the `## Agent skills` block in `AGENTS.md`/`CLAUDE.md` and the `docs/agents/` layout that **7 of the other 8 skills depend on** for issue-tracker context, triage labels, and domain documentation. Without it, those 7 will silently degrade — they invoke against missing files rather than failing loudly. This is a per-project step, not a per-skill step: once per repo and you are done.
+**Before first use in any new project, run `setup-matt-pocock-skills` once.** It provisions the `## Agent skills` block in `AGENTS.md`/`CLAUDE.md` and the `docs/agents/` layout that **11 of the other 12 skills depend on** for issue-tracker context, triage labels, and domain documentation. Without it, those 11 will silently degrade — they invoke against missing files rather than failing loudly. This is a per-project step, not a per-skill step: once per repo and you are done.
 
 ## TL;DR
 
@@ -12,7 +12,7 @@ The 9 skills installed by `./install-skills.sh --eng` are a curated subset of [`
 - **Non-functional code** → `tdd` during implementation; `diagnose` on regressions.
 - **Architectural decay** → `improve-codebase-architecture` for refactors; `zoom-out` before edits to unfamiliar code; `triage` for issue state.
 
-## The 9 skills
+## The 13 skills
 
 ### `setup-matt-pocock-skills`
 
@@ -48,7 +48,23 @@ Adds system-wide context to a code section: who calls it, what it depends on, wh
 
 ### `to-prd`
 
-Converts a conversation into a Product Requirements Document plus GitHub issues. Targets **misalignment** at the planning-to-execution handoff. Invoke when a free-form conversation has produced enough alignment to be worth pinning into tickets.
+Converts a conversation into a Product Requirements Document. Targets **misalignment** at the planning-to-PRD handoff. Pairs with `to-issues` for the PRD-to-tickets follow-up. Invoke when a free-form conversation has produced enough alignment to be worth pinning into a written spec.
+
+### `to-issues`
+
+Converts the PRD produced by `to-prd` into a set of GitHub issues. Targets **misalignment** at the PRD-to-execution boundary. Invoke after `to-prd` when the plan is ready to be tracked as discrete tickets.
+
+### `caveman`
+
+Ultra-compressed communication mode. Cuts agent token usage by ~75 % by dropping filler while preserving technical accuracy. Invoke when context budget is tight or when an agent is about to produce a long-running summary.
+
+### `handoff`
+
+Compacts the current conversation into a handoff document so a separate agent (or future you) can pick up the work without re-deriving state. Invoke at natural breakpoints in long sessions.
+
+### `write-a-skill`
+
+Scaffolds a new skill with proper structure, progressive disclosure, and bundled resources. Invoke when extracting a repeated workflow into a reusable skill.
 
 ## Suggested workflow
 
@@ -58,17 +74,19 @@ Converts a conversation into a Product Requirements Document plus GitHub issues.
 4. **During implementation:** `tdd`.
 5. **On regressions or weird behavior:** `diagnose`.
 6. **Before substantial new work or after sustained organic growth:** `improve-codebase-architecture`.
-7. **At the planning-to-issues handoff:** `to-prd`.
+7. **At the planning-to-PRD handoff:** `to-prd`.
+7a. **After PRD, before issue tracking:** `to-issues`.
 8. **For ongoing issue hygiene:** `triage`.
 
-The skills compose: `grill-me` → `to-prd` → `triage` is a planning pipeline; `zoom-out` → `tdd` → `diagnose` is an editing pipeline; `improve-codebase-architecture` is the periodic structural pass.
+The skills compose: `grill-me` → `to-prd` → `to-issues` → `triage` is a planning pipeline; `zoom-out` → `tdd` → `diagnose` is an editing pipeline; `improve-codebase-architecture` is the periodic structural pass.
 
 ## Skills we did not include
 
 We omitted upstream skills that fall outside the "discipline" theme of this bundle:
 
-- **`to-issues`** — the natural successor to `to-prd` (PRD → GitHub issues). Intentionally excluded to keep this bundle scoped to discipline rather than issue tracking. Install manually if you want the full pipeline: `npx skills add mattpocock/skills --skill to-issues`.
-- **`caveman`, `handoff`, `write-a-skill`, `prototype`, `git-guardrails-claude-code`, `migrate-to-shoehorn`, `scaffold-exercises`, `setup-pre-commit`** — out of scope for this bundle (experimental, niche, or orthogonal to the discipline theme).
+> **Now included (policy reversal):** `to-issues` was previously excluded "to keep the bundle scoped to discipline rather than issue tracking." That rationale has been reversed — the PRD → GitHub-issues handoff is now considered part of the discipline bundle, completing the `grill-me → to-prd → to-issues → triage` planning pipeline. Bundled with `--eng`.
+
+- **`prototype`, `git-guardrails-claude-code`, `migrate-to-shoehorn`, `scaffold-exercises`, `setup-pre-commit`** — out of scope for this bundle (experimental, niche, or orthogonal to the discipline theme).
 
 ## A note on `CONTEXT.md`
 
@@ -76,4 +94,4 @@ We omitted upstream skills that fall outside the "discipline" theme of this bund
 
 ## Bottom line
 
-Run `setup-matt-pocock-skills` once per repo. Reach for `grill-me` and `tdd` first — most of the value lives there. The other 6 are situational tools you invoke when their failure mode actually shows up.
+Run `setup-matt-pocock-skills` once per repo. Reach for `grill-me` and `tdd` first — most of the value lives there. The other 10 are situational tools you invoke when their failure mode actually shows up.

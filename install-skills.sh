@@ -272,17 +272,20 @@ LOCAL_SKILLS=(
 #
 # Engineering-skills registry (installed with --eng / --engineering)
 #
-#   Opinionated workflow skills from Matt Pocock's mattpocock/skills
-#   repo. Gated behind --eng / --engineering because these are
-#   workflow-shaping (TDD, grilling, PRDs) rather than baseline utilities.
-#   The --eng flag is independent of --local, --math, and --repo-tools.
+#   Opinionated workflow skills (Matt Pocock's engineering/ +
+#   productivity/ upstream folders from mattpocock/skills).
+#   Gated behind --eng / --engineering because these are
+#   workflow-shaping (TDD, grilling, PRDs, compressed comms)
+#   rather than baseline utilities. The bundle is intentionally
+#   cross-folder. The --eng flag is independent of --local,
+#   --math, and --repo-tools.
 #   Each entry is a pair of lines: <repo> followed by <skill-name>.
 #
 # =========================================================================
 
 ENGINEERING_SKILLS=(
   # setup-matt-pocock-skills MUST run once per project before first use
-  # of the other 8 — it provisions the AGENTS.md/CLAUDE.md agent-skills
+  # of the other 12 — it provisions the AGENTS.md/CLAUDE.md agent-skills
   # block and docs/agents/ layout the rest depend on.
   "mattpocock/skills"                                                           "setup-matt-pocock-skills"
   "mattpocock/skills"                                                           "tdd"
@@ -293,6 +296,12 @@ ENGINEERING_SKILLS=(
   "mattpocock/skills"                                                           "triage"
   "mattpocock/skills"                                                           "zoom-out"
   "mattpocock/skills"                                                           "to-prd"
+  "mattpocock/skills"                                                           "to-issues"
+
+  # --- Productivity (upstream skills/productivity/) ---
+  "mattpocock/skills"                                                           "caveman"
+  "mattpocock/skills"                                                           "handoff"
+  "mattpocock/skills"                                                           "write-a-skill"
 )
 
 
@@ -479,10 +488,11 @@ Usage(){
       When --eng (or --engineering) is passed, one additional
       phase runs:
 
-        - Engineering skills — via npx skills add (Matt
-          Pocock's opinionated TDD, diagnose, grill-me,
+        - Engineering + productivity skills — via npx skills
+          add (Matt Pocock's TDD, diagnose, grill-me,
           grill-with-docs, improve-codebase-architecture,
-          triage, zoom-out, to-prd, and the
+          triage, zoom-out, to-prd, to-issues, caveman,
+          handoff, write-a-skill, and the
           setup-matt-pocock-skills bootstrap).
 
       --eng is independent of --local, --math, and
@@ -562,8 +572,9 @@ Usage(){
                                       >=3.10 and Node >=22. Independent
                                       of --local and --math.
       --eng, --engineering            Also install Matt Pocock's
-                                      engineering-discipline skills
-                                      (TDD, grill-me, triage, etc.).
+                                      engineering + productivity skills
+                                      (TDD, grill-me, to-issues, caveman,
+                                      write-a-skill, etc.).
                                       Independent of --local, --math,
                                       and --repo-tools.
 

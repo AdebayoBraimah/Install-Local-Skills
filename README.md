@@ -31,7 +31,7 @@ When `--math` is passed, **one additional phase** runs:
 
 When `--eng` (or `--engineering`) is passed, **one additional phase** runs:
 
-- **Engineering skills** — via `npx skills add` (Matt Pocock's opinionated TDD/grill-me/triage/etc.)
+- **Engineering + productivity skills** — via `npx skills add` (Matt Pocock's opinionated TDD/grill-me/triage/caveman/handoff/etc.)
 
 `--eng` is independent of `--local`, `--math`, and `--repo-tools`; any combination may be passed.
 
@@ -385,7 +385,7 @@ These are Matt Pocock's opinionated workflow skills from [`mattpocock/skills`](h
 
 | Category | Skill | Source | Description |
 |---|---|---|---|
-| Engineering discipline | `setup-matt-pocock-skills` | [mattpocock/skills](https://github.com/mattpocock/skills) | **Per-project bootstrap** — provisions the `## Agent skills` block in `AGENTS.md`/`CLAUDE.md` and the `docs/agents/` layout that the other 8 rely on. Run once per project before first use. |
+| Engineering discipline | `setup-matt-pocock-skills` | [mattpocock/skills](https://github.com/mattpocock/skills) | **Per-project bootstrap** — provisions the `## Agent skills` block in `AGENTS.md`/`CLAUDE.md` and the `docs/agents/` layout that the other 12 rely on. Run once per project before first use. |
 | Engineering discipline | `tdd` | [mattpocock/skills](https://github.com/mattpocock/skills) | Red-green-refactor loop discipline |
 | Engineering discipline | `diagnose` | [mattpocock/skills](https://github.com/mattpocock/skills) | Structured debugging for bugs and performance regressions |
 | Engineering discipline | `grill-me` | [mattpocock/skills](https://github.com/mattpocock/skills) | Adversarial questioning to drive alignment before coding |
@@ -393,15 +393,19 @@ These are Matt Pocock's opinionated workflow skills from [`mattpocock/skills`](h
 | Engineering discipline | `improve-codebase-architecture` | [mattpocock/skills](https://github.com/mattpocock/skills) | Identifies structural improvement opportunities |
 | Engineering discipline | `triage` | [mattpocock/skills](https://github.com/mattpocock/skills) | Issue management via state machines |
 | Engineering discipline | `zoom-out` | [mattpocock/skills](https://github.com/mattpocock/skills) | Adds system-wide context to a code section |
-| Engineering discipline | `to-prd` | [mattpocock/skills](https://github.com/mattpocock/skills) | Converts conversations into PRDs + GitHub issues |
+| Engineering discipline | `to-prd` | [mattpocock/skills](https://github.com/mattpocock/skills) | Converts conversations into PRDs (GitHub-issue creation is now handled by to-issues) |
+| Engineering discipline | `to-issues` | [mattpocock/skills](https://github.com/mattpocock/skills) | Converts a PRD into GitHub issues (companion to `to-prd`, completes the PRD → issues pipeline) |
+| Productivity | `caveman` | [mattpocock/skills](https://github.com/mattpocock/skills) | Ultra-compressed comms mode (~75 % token reduction while preserving technical accuracy) |
+| Productivity | `handoff` | [mattpocock/skills](https://github.com/mattpocock/skills) | Compact current conversation into a handoff document for another agent |
+| Productivity | `write-a-skill` | [mattpocock/skills](https://github.com/mattpocock/skills) | Scaffold a new skill with proper structure and progressive disclosure |
 
-> **Engineering-discipline skills (`mattpocock/skills`):** `grill-me` lives under upstream `productivity/`, not `engineering/`. It is grouped here for workflow coherence — the bundle is intentionally cross-folder.
+> **Cross-folder bundle (`mattpocock/skills`):** `grill-me`, `caveman`, `handoff`, and `write-a-skill` live under upstream `productivity/`; the remaining nine are from `engineering/`. They are grouped here for workflow coherence — the bundle is intentionally cross-folder.
 
-> **Bootstrap reminder:** After installation, run `setup-matt-pocock-skills` **once per project** before first use of the other 8. It writes the `AGENTS.md`/`CLAUDE.md` agent-skills block and `docs/agents/` layout the rest depend on; 7 of the 8 will silently degrade without it.
+> **Bootstrap reminder:** After installation, run `setup-matt-pocock-skills` **once per project** before first use of the other 12 (the bootstrap itself doesn't depend on itself). It writes the `AGENTS.md`/`CLAUDE.md` agent-skills block and `docs/agents/` layout the rest depend on; 11 of the 12 will silently degrade without it.
 
-> **Excluded by design:** `to-issues` (the natural successor to `to-prd`) is omitted to keep the bundle scoped to discipline rather than issue tracking. Install it manually if needed: `npx skills add mattpocock/skills --skill to-issues`.
+> **Now included (policy reversal):** `to-issues` was previously excluded "to keep the bundle scoped to discipline rather than issue tracking." That rationale has been reversed — the PRD → GitHub-issues handoff is now considered part of the discipline bundle, completing the `grill-me → to-prd → to-issues → triage` planning pipeline. Bundled with `--eng`.
 
-> **Choosing when to invoke:** See [docs/mattpocock-skills-guide.md](docs/mattpocock-skills-guide.md) for per-skill triggers and how the 9 compose into one workflow.
+> **Choosing when to invoke:** See [docs/mattpocock-skills-guide.md](docs/mattpocock-skills-guide.md) for per-skill triggers and how the 13 compose into one workflow.
 
 ## Repo Tools (`--repo-tools`)
 
