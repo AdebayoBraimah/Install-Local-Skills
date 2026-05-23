@@ -160,6 +160,9 @@ CODEX_PLUGINS=(
 AGENTS_COPY_SKILLS=(
   # --- Planning ---
   "${SCRIPT_DIR}/skills/plan-review-cdx"                                        "plan-review-cdx"
+
+  # --- Orchestration ---
+  "${SCRIPT_DIR}/skills/orchestrator-cdx"                                       "orchestrator-cdx"
 )
 
 
@@ -179,6 +182,9 @@ AGENTS_COPY_SKILLS=(
 CLAUDE_COPY_SKILLS=(
   # --- Planning ---
   "${SCRIPT_DIR}/skills/plan-review"                                            "plan-review"
+
+  # --- Orchestration ---
+  "${SCRIPT_DIR}/skills/orchestrate"                                            "orchestrate"
 )
 
 
