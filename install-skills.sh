@@ -212,6 +212,9 @@ COPY_SKILLS=(
 
   # --- Research engineering ---
   "${SCRIPT_DIR}/skills/research-engineer-ai-ml"                                "research-engineer-ai-ml"
+
+  # --- Writing / AI detection ---
+  "${SCRIPT_DIR}/skills/pangram"                                                "pangram"
 )
 
 # Patched fork of ctsstc/get-shit-done-skills vendored as a submodule
