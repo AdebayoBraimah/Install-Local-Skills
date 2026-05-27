@@ -11,15 +11,15 @@ Use this skill to run writing through Pangram's V3 AI-detection REST API without
 ## Quick Start
 
 ```bash
-python /Users/adebayobraimah/.agents/skills/pangram/scripts/pangram_check.py --text "Text to check"
-python /Users/adebayobraimah/.agents/skills/pangram/scripts/pangram_check.py --file draft.md --json
-cat draft.md | python /Users/adebayobraimah/.agents/skills/pangram/scripts/pangram_check.py
+python ~/.agents/skills/pangram/scripts/pangram_check.py --text "Text to check"
+python ~/.agents/skills/pangram/scripts/pangram_check.py --file draft.md --json
+cat draft.md | python ~/.agents/skills/pangram/scripts/pangram_check.py
 ```
 
 To verify whether a key is discoverable without running a check:
 
 ```bash
-python /Users/adebayobraimah/.agents/skills/pangram/scripts/pangram_config.py --check
+python ~/.agents/skills/pangram/scripts/pangram_config.py --check
 ```
 
 ## Key Discovery
