@@ -10,8 +10,6 @@
 #   - Add lit-<skills> from claude code [later; requires more work]
 #   - Create/modify lit-skills for codex [later; requires more work]
 #   - Add pangram (and ai-anti-pattern-review) skills
-#   - Add new/updated codex skills
-#   - Append clc to claude special skills (claude-code only)
 #   - Add: ponytail (https://github.com/DietrichGebert/ponytail)
 #   - Add: codebase-memory-mcp (https://github.com/DeusData/codebase-memory-mcp)
 #   - Add: SkillSpector (https://github.com/nvidia/skillspector)
