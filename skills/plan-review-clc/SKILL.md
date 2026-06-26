@@ -1,7 +1,7 @@
 ---
-name: plan-review
+name: plan-review-clc
 description: |
-  Two-reviewer plan quality assurance loop. Use when the user invokes /plan-review,
+  Two-reviewer plan quality assurance loop. Use when the user invokes /plan-review-clc,
   asks for a plan review, wants independent review of a plan, or wants to validate
   a plan before execution. Default mode dispatches one Claude reviewer and one Codex
   reviewer in parallel; falls back to a Claude-only spec + execution split when
@@ -17,13 +17,13 @@ Automated two-reviewer plan QA loop. Dispatches independent reviewers in paralle
 
 ## Invocation
 
-- `/plan-review` — review the active plan in the default mode (parallel)
-- `/plan-review path/to/plan.md` — review the given file in default mode (parallel)
-- `/plan-review sequential` — sequential dispatch (first reviewer completes before the second starts)
-- `/plan-review claude-only` — force fallback mode (two Claude Agents, spec + exec split)
-- `/plan-review claude-only sequential` — fallback mode, sequential
-- `/plan-review claude-only path/to/plan.md` — fallback mode on a file path
-- `/plan-review path/to/plan.md sequential claude-only` — argument order does not matter
+- `/plan-review-clc` — review the active plan in the default mode (parallel)
+- `/plan-review-clc path/to/plan.md` — review the given file in default mode (parallel)
+- `/plan-review-clc sequential` — sequential dispatch (first reviewer completes before the second starts)
+- `/plan-review-clc claude-only` — force fallback mode (two Claude Agents, spec + exec split)
+- `/plan-review-clc claude-only sequential` — fallback mode, sequential
+- `/plan-review-clc claude-only path/to/plan.md` — fallback mode on a file path
+- `/plan-review-clc path/to/plan.md sequential claude-only` — argument order does not matter
 
 ### Argument tokenizer
 
@@ -47,7 +47,7 @@ Matching is whole-token equality, not substring. A path argument like `claude-on
    ```
 
    On non-zero, announce: `Codex unavailable; running in claude-only mode.`
-3. Once `mode` is set, it stays fixed for the entire `/plan-review` invocation. There is no mid-run mode-switch.
+3. Once `mode` is set, it stays fixed for the entire `/plan-review-clc` invocation. There is no mid-run mode-switch.
 
 Notes on the probe:
 
@@ -66,7 +66,7 @@ The Agent spawn-prompt path strings below contain literal `${HOME}/...`. The rec
 
 ```bash
 # Run this in Bash before constructing each Agent prompt
-agent_dir="${HOME}/.claude/skills/plan-review/agents"
+agent_dir="${HOME}/.claude/skills/plan-review-clc/agents"
 echo "$agent_dir"   # use the resolved absolute path in the prompt
 ```
 
@@ -80,7 +80,7 @@ Determine the plan source in this order:
 2. **File path argument**: If a path argument was provided (per the tokenizer above), read that file.
 3. **Both present**: Prefer the active plan; ignore the argument.
 4. **Neither present**: Print usage instructions and stop:
-   > Usage: `/plan-review [path/to/plan.md] [sequential] [claude-only]`
+   > Usage: `/plan-review-clc [path/to/plan.md] [sequential] [claude-only]`
    > Either be in plan mode or provide a path to a plan file.
 
 Store the resolved plan content and its source path. This is the **original plan file** that will accumulate review feedback across rounds.
@@ -108,7 +108,7 @@ fi
 Pre-resolve the agent directory once per round for use in spawn prompts:
 
 ```bash
-agent_dir="${HOME}/.claude/skills/plan-review/agents"
+agent_dir="${HOME}/.claude/skills/plan-review-clc/agents"
 ```
 
 #### 1b. Dispatch Reviews
@@ -119,7 +119,7 @@ Dispatch differs by `mode`. Within each mode, parallel vs sequential is selected
 
 ##### Parallel (default within default mode)
 
-Spawn BOTH reviewers simultaneously in a single message (two Agent tool calls). Substitute `<agent_dir>` with the resolved Bash variable (e.g., `/Users/<user>/.claude/skills/plan-review/agents`).
+Spawn BOTH reviewers simultaneously in a single message (two Agent tool calls). Substitute `<agent_dir>` with the resolved Bash variable (e.g., `/Users/<user>/.claude/skills/plan-review-clc/agents`).
 
 **Claude Code sub-agent:**
 ```
@@ -261,5 +261,5 @@ rm -f /tmp/plan-review-claude-r*.md /tmp/plan-review-codex-r*.md \
 
 - This skill does NOT execute the plan. It only reviews and corrects it.
 - Code review by the reviewers is permissible if and only if it is also necessary for the plan review.
-- No persistent state across separate invocations. Each `/plan-review` call is self-contained.
+- No persistent state across separate invocations. Each `/plan-review-clc` call is self-contained.
 - Mode is fixed at pre-flight; no mid-run switching.

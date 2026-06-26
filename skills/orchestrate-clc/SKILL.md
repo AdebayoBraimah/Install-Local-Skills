@@ -1,12 +1,12 @@
 ---
-name: orchestrate
-description: Thin policy layer over GSD that drives a phase end-to-end with a Claude-only plan-review gate, parallel post-execution review via subagent dispatch, ntfy notifications, and a handoff document on terminal state. Triggers on "/orchestrate", "/orchestrate full <phase>", "/orchestrate plan <phase>", "/orchestrate verify <phase>", "run the pipeline", "orchestrate this phase".
+name: orchestrate-clc
+description: Thin policy layer over GSD that drives a phase end-to-end with a Claude-only plan-review gate, parallel post-execution review via subagent dispatch, ntfy notifications, and a handoff document on terminal state. Triggers on "/orchestrate-clc", "/orchestrate-clc full <phase>", "/orchestrate-clc plan <phase>", "/orchestrate-clc verify <phase>", "run the pipeline", "orchestrate this phase".
 version: 0.1.0
 ---
 
 <!-- no-codex-audit: 2026-05-23 -->
 
-# orchestrate
+# orchestrate-clc
 
 ## 1. Purpose
 
@@ -15,7 +15,7 @@ version: 0.1.0
 ## 2. Documented constants
 
 ```
-NTFY_TOPIC                = "ab-mac"                 # author default; see Section 13 — migrate to ~/.config/orchestrate/.env
+NTFY_TOPIC                = "ab-mac"                 # author default; see Section 13 — migrate to ~/.config/orchestrate-clc/.env
 NTFY_SCRIPT_CANDIDATES    = [
   "$HOME/.claude/sandbox/skills/ntfy-notify/scripts/ntfy_send.sh",
   "$HOME/.claude/skills/ntfy-notify/scripts/ntfy_send.sh"
@@ -43,7 +43,7 @@ SHA256_CMD                = "shasum -a 256 | awk '{print \$1}'"
 
 1. **Working directory**: must contain `.planning/`. Abort with usage if not at project root.
 2. **Roadmap**: `.planning/ROADMAP.md` must exist. Abort otherwise.
-3. **Argument grammar**: `/orchestrate <mode> <phase>` — both arguments required. **No defaulting on a single token** (avoids the ambiguity between phase-name "full" and mode "full"). If only one token is supplied, abort with usage.
+3. **Argument grammar**: `/orchestrate-clc <mode> <phase>` — both arguments required. **No defaulting on a single token** (avoids the ambiguity between phase-name "full" and mode "full"). If only one token is supplied, abort with usage.
 4. **Mode validation**: `<mode>` ∈ {`full`, `plan`, `verify`}. Abort otherwise.
 5. **Phase resolution** against `.planning/phases/`:
    - Exact directory-name match wins → `PHASE_DIR=.planning/phases/<phase>`.
@@ -57,11 +57,11 @@ SHA256_CMD                = "shasum -a 256 | awk '{print \$1}'"
 7. **plan-review name-collision check**: probe all three skill roots:
    ```bash
    find ~/.claude/skills ~/.claude/sandbox/skills ~/.agents/skills \
-     -maxdepth 2 -type d -name "plan-review" 2>/dev/null
+     -maxdepth 2 -type d -name "plan-review-clc" 2>/dev/null
    ```
    - Variants like `plan-review-cdx/` are fine.
    - If more than one bare `plan-review/` exists, the orchestrator must verify (via byte-equality diff) that they're duplicates. If they are duplicates, proceed (the harness resolves `plan-review` to one of them and behaviour is identical). If they differ, abort with an instruction to rename one or alias the orchestrator's invocation to a canonical path.
-   - Known state on author's system (2026-05-23): `~/.claude/skills/plan-review/SKILL.md` and `~/.claude/sandbox/skills/plan-review/SKILL.md` are byte-identical duplicates; this is acceptable.
+   - Known state on author's system (2026-05-23): `~/.claude/skills/plan-review-clc/SKILL.md` and `~/.claude/sandbox/skills/plan-review-clc/SKILL.md` are byte-identical duplicates; this is acceptable.
 8. **STATE.md position**: read `.planning/STATE.md` and note the current `Status:` line for resumption logic.
 
 ## 5. Modes and stage coverage
@@ -112,13 +112,13 @@ For each `PLAN_FILE` in `${PLAN_FILES[@]}`:
    ```
    Invoke as:
    ```
-   Skill(plan-review, "claude-only /abs/path/to/01-PLAN-REVIEW.md")
+   Skill(plan-review-clc, "claude-only /abs/path/to/01-PLAN-REVIEW.md")
    ```
    plan-review's tokenizer splits on whitespace and matches whole tokens; the leading `claude-only` token routes to the Claude-only fallback (two Claude `Agent` subagents — `plan-reviewer-spec`, `plan-reviewer-exec`).
 
-3. **plan-review may interactively ask the user to extend `max_rounds`** on cap-hit. The orchestrator cannot interpose on that prompt (it's suspended inside the `Skill` call). When running under `/orchestrate`, the user must decline plan-review's extension prompt for the no-Codex/cap-hit invariant to hold cleanly. The orchestrator's cap-hit detection still fires (it counts actual round sections, not `PLAN_REVIEW_MAX_ROUNDS`), so accidental extension does not break detection — it just delays terminal-state transition.
+3. **plan-review may interactively ask the user to extend `max_rounds`** on cap-hit. The orchestrator cannot interpose on that prompt (it's suspended inside the `Skill` call). When running under `/orchestrate-clc`, the user must decline plan-review's extension prompt for the no-Codex/cap-hit invariant to hold cleanly. The orchestrator's cap-hit detection still fires (it counts actual round sections, not `PLAN_REVIEW_MAX_ROUNDS`), so accidental extension does not break detection — it just delays terminal-state transition.
 
-4. **Convergence detection** (file-based, anchored against plan-review's actual append template documented in `~/.claude/skills/plan-review/SKILL.md`):
+4. **Convergence detection** (file-based, anchored against plan-review's actual append template documented in `~/.claude/skills/plan-review-clc/SKILL.md`):
 
    plan-review appends `\n\n---\n\n## Spec Review — Round <N>\n` (fallback mode) or `\n\n---\n\n## Claude Review — Round <N>\n` (default mode). Because the orchestrator forces claude-only, only the **Spec Review** form should appear.
 
@@ -449,7 +449,7 @@ The orchestrator never writes to `STATE.md` directly — only GSD does. The orch
 
 ## 10. Resumption (sentinel-based)
 
-When `/orchestrate <mode> <phase>` is re-invoked on an in-progress phase:
+When `/orchestrate-clc <mode> <phase>` is re-invoked on an in-progress phase:
 
 - **Stage 1**: skip if `.stage1-complete` exists AND its recorded filename list equals current `ls "$PHASE_DIR"/*-PLAN.md | sort`. **Set mismatch → invalidate Stages 1 AND 2** (new plan files appeared or old ones disappeared; per-plan sentinels become stale).
 - **Stage 2**:
@@ -490,14 +490,14 @@ Quoted contract specs, not line citations (line numbers drift; specs are normati
 
 ## 13. Pre-share TODOs (sharing-cleanup; safe to remove when sharing)
 
-- `NTFY_TOPIC` currently uses `${NTFY_DEFAULT_TOPIC:-ab-mac}`. The `ab-mac` default is the author's personal topic and is benign on the author's machine. **For future updates / patches**: migrate the topic out of `SKILL.md` entirely into `~/.config/orchestrate/.env` (read at runtime, no hardcoded fallback). Until that migration, anyone forking should either export `NTFY_DEFAULT_TOPIC` in the shell that launches Claude Code or rewrite the default in their fork.
+- `NTFY_TOPIC` currently uses `${NTFY_DEFAULT_TOPIC:-ab-mac}`. The `ab-mac` default is the author's personal topic and is benign on the author's machine. **For future updates / patches**: migrate the topic out of `SKILL.md` entirely into `~/.config/orchestrate-clc/.env` (read at runtime, no hardcoded fallback). Until that migration, anyone forking should either export `NTFY_DEFAULT_TOPIC` in the shell that launches Claude Code or rewrite the default in their fork.
 - Replace `NTFY_SCRIPT_CANDIDATES` dual-path probe with a single canonical path or skill arg.
 - **Security-review policy**: current default is `available-only` (optimistic dispatch, `n/a` on failure). Pre-share TODO is to add `always` (abort if dispatch fails) and `never` (force-skip) as opt-in flags.
-- **User-facing note for plan-review extension prompt**: when running under `/orchestrate`, decline plan-review's "extend max_rounds" prompt on cap-hit. The orchestrator's cap-hit detection still fires (it counts actual round sections), but declining keeps the budget at 5 rounds and avoids extra reviewer cost. There is no machine-readable way for the orchestrator to suppress this prompt from outside plan-review.
+- **User-facing note for plan-review extension prompt**: when running under `/orchestrate-clc`, decline plan-review's "extend max_rounds" prompt on cap-hit. The orchestrator's cap-hit detection still fires (it counts actual round sections), but declining keeps the budget at 5 rounds and avoids extra reviewer cost. There is no machine-readable way for the orchestrator to suppress this prompt from outside plan-review.
 
 ## 14. Verification
 
-The following checks validate the skill after install. Run them once before relying on `/orchestrate`.
+The following checks validate the skill after install. Run them once before relying on `/orchestrate-clc`.
 
 1. **Static load check** (PyYAML — standard in most envs; does not require `python-frontmatter`):
    ```bash
@@ -508,17 +508,17 @@ The following checks validate the skill after install. Run them once before rely
    end = t.index('\n---\n', 4)
    yaml.safe_load(t[4:end])
    print('frontmatter OK')
-   " ~/.claude/skills/orchestrate/SKILL.md
+   " ~/.claude/skills/orchestrate-clc/SKILL.md
    ```
    Must exit 0. Separately:
    ```bash
-   grep -E '^tools:' ~/.claude/skills/orchestrate/SKILL.md | wc -l
+   grep -E '^tools:' ~/.claude/skills/orchestrate-clc/SKILL.md | wc -l
    ```
    must equal `0` (this skill intentionally omits the `tools:` field).
 
-2. **Prerequisite-fail dry run**: `/orchestrate full nonexistent-phase` in a directory with no `.planning/`. Must stop at the prerequisite check (Section 4), surface missing `.planning/`, and invoke **no** GSD command.
+2. **Prerequisite-fail dry run**: `/orchestrate-clc full nonexistent-phase` in a directory with no `.planning/`. Must stop at the prerequisite check (Section 4), surface missing `.planning/`, and invoke **no** GSD command.
 
-3. **End-to-end smoke** (scratch git repo): `gsd:new-project`, add a multi-plan phase, run `/orchestrate full <phase>`. Confirm:
+3. **End-to-end smoke** (scratch git repo): `gsd:new-project`, add a multi-plan phase, run `/orchestrate-clc full <phase>`. Confirm:
    - All artifacts in Section 8 exist.
    - `.stage2-complete` is JSON with each plan's sha256 matching `eval $SHA256_CMD < $PLAN_FILE`.
    - Per-task commits exist between `START-SHA` and `END-SHA`.
@@ -528,7 +528,7 @@ The following checks validate the skill after install. Run them once before rely
 
 5. **Resumption check**: interrupt after Stage 2; re-invoke. Confirm Stages 1–2 skipped. Edit one `*-PLAN.md` between runs: only that plan's review re-runs (sha256 mismatch); others' per-plan sentinels still match → skipped. Add a new `*-PLAN.md` to directory: Stages 1 AND 2 both invalidate.
 
-6. **Notification fail-soft**: temporarily rename both `ntfy_send.sh` paths; run `/orchestrate full <phase>`. Must reach `done`, write all sentinels, write `END-SHA`. Stderr contains `[orchestrate] ntfy notification failed; continuing` or `[orchestrate] ntfy script not found; skipping notification`.
+6. **Notification fail-soft**: temporarily rename both `ntfy_send.sh` paths; run `/orchestrate-clc full <phase>`. Must reach `done`, write all sentinels, write `END-SHA`. Stderr contains `[orchestrate] ntfy notification failed; continuing` or `[orchestrate] ntfy script not found; skipping notification`.
 
 7. **Cap-hit detection unit test** (synthetic-input, non-destructive): extract the convergence-detection logic as a bash function or Python snippet. Test it against three inline fixtures:
 
@@ -556,9 +556,9 @@ The following checks validate the skill after install. Run them once before rely
    **Fixture C (delimiter absent)** — `/tmp/test-no-delim.md` with plan content but no `## Spec Review — Round N` heading.
    Expected: abort with `error: plan-review delimiter not found`.
 
-   This test exercises the regex against the real append template; it does **not** modify any production file under `~/.claude/skills/plan-review/`.
+   This test exercises the regex against the real append template; it does **not** modify any production file under `~/.claude/skills/plan-review-clc/`.
 
-8. **Multi-plan iteration**: phase with two plan files; `/orchestrate plan <phase>`. Both `*-PLAN-REVIEW.md` exist with claude-only fallback-mode sections; `.stage2-complete` JSON has both hashes; both `.stage2-converged-*` sentinels exist.
+8. **Multi-plan iteration**: phase with two plan files; `/orchestrate-clc plan <phase>`. Both `*-PLAN-REVIEW.md` exist with claude-only fallback-mode sections; `.stage2-complete` JSON has both hashes; both `.stage2-converged-*` sentinels exist.
 
 9. **Stage 4 checkpoint detection**: force GSD to emit a checkpoint (e.g. plan task `type="checkpoint:human-verify"`). Confirm transition to `checkpoint:human-verify`, no `END-SHA`, handoff + ntfy each run exactly once.
 
@@ -588,7 +588,7 @@ The following checks validate the skill after install. Run them once before rely
       /<!-- no-codex:prohibition-block-end -->/{skip=0; next}
       /^```/{in_code = !in_code; next}
       !skip && in_code
-    ' ~/.claude/skills/orchestrate/SKILL.md \
+    ' ~/.claude/skills/orchestrate-clc/SKILL.md \
       | grep -nE 'subagent_type[[:space:]]*[:=][[:space:]]*"codex:|command[[:space:]]+-v[[:space:]]+codex' \
       | tee /dev/stderr \
       | (! grep -q .)
@@ -599,7 +599,7 @@ The following checks validate the skill after install. Run them once before rely
     ```bash
     awk '/<!-- no-codex:prohibition-block-start -->/{skip=1; next} \
          /<!-- no-codex:prohibition-block-end -->/{skip=0; next} \
-         !skip' ~/.claude/skills/orchestrate/SKILL.md \
+         !skip' ~/.claude/skills/orchestrate-clc/SKILL.md \
       | grep -nE 'codex:|command -v codex|"codex'
     ```
     Each line of output must be one of: a subagent prompt instructing abort on `codex:*`, a durable-contract sentence naming the locked-out path, or a verification command that includes `codex:` in its own pattern. Any other match is a regression.
@@ -607,7 +607,7 @@ The following checks validate the skill after install. Run them once before rely
     b. **Transitive audit** (chained skills' bodies; matches inside `plan-review` SKILL.md body that describe its default Codex+Claude mode are EXPECTED because the orchestrator forces `claude-only`; matches in any **agent file**, in **deep-review**, **handoff**, **to-issues**, or **GSD executor** are blockers):
     ```bash
     grep -rnE 'codex:|subagent_type.*codex|command -v codex' \
-      ~/.claude/skills/plan-review/agents/ \
+      ~/.claude/skills/plan-review-clc/agents/ \
       ~/.claude/sandbox/skills/gsd/ \
       ~/.claude/sandbox/skills/deep-review/ \
       ~/.agents/skills/handoff/ \
@@ -619,8 +619,8 @@ The following checks validate the skill after install. Run them once before rely
     c. **Name-collision audit**: probe all three skill roots:
     ```bash
     find ~/.claude/skills ~/.claude/sandbox/skills ~/.agents/skills \
-      -maxdepth 2 -type d -name "plan-review" 2>/dev/null
+      -maxdepth 2 -type d -name "plan-review-clc" 2>/dev/null
     ```
-    Expected: exactly one match at `~/.claude/skills/plan-review`. If more than one bare `plan-review/` directory appears, verify they are byte-identical duplicates (`diff -r`) — if they are, the harness resolves to one deterministically and the collision is benign. If they differ, alias the orchestrator's invocation to the canonical path or rename one.
+    Expected: exactly one match at `~/.claude/skills/plan-review-clc`. If more than one bare `plan-review/` directory appears, verify they are byte-identical duplicates (`diff -r`) — if they are, the harness resolves to one deterministically and the collision is benign. If they differ, alias the orchestrator's invocation to the canonical path or rename one.
 
     d. **Date and reproduce**: each audit is dated in a comment at the top of the orchestrator's SKILL.md when last run. Format: `<!-- no-codex-audit: YYYY-MM-DD -->`. Current value: see line 1.

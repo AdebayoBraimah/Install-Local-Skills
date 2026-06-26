@@ -9,6 +9,16 @@
 # TODO:
 #   - Add lit-<skills> from claude code [later; requires more work]
 #   - Create/modify lit-skills for codex [later; requires more work]
+#   - Add pangram (and ai-anti-pattern-review) skills
+#   - Add new/updated codex skills
+#   - Append clc to claude special skills (claude-code only)
+#   - Add: ponytail (https://github.com/DietrichGebert/ponytail)
+#   - Add: codebase-memory-mcp (https://github.com/DeusData/codebase-memory-mcp)
+#   - Add: SkillSpector (https://github.com/nvidia/skillspector)
+#     - NOTE: Have this installed first to inspect other skills for security issues (e.g., gsd)
+#   - Remove: orchestrat* skills
+#   - Create: alert-me skill (Alert me via the ntfy skill at https://ntfy.sh/ab-mac when you finish the task OR if you stop the task for any reason.)
+#   - Create: loop-engineer skill (loop (claude) vs goal (codex))
 
 # Resolve the directory this script lives in (for local copy skills)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -163,6 +173,11 @@ AGENTS_COPY_SKILLS=(
 
   # --- Orchestration ---
   "${SCRIPT_DIR}/skills/orchestrator-cdx"                                       "orchestrator-cdx"
+
+  # --- Literature / research ---
+  "${SCRIPT_DIR}/skills/lit-review-cdx"                                         "lit-review-cdx"
+  "${SCRIPT_DIR}/skills/lit-summarizer-cdx"                                     "lit-summarizer-cdx"
+  "${SCRIPT_DIR}/skills/lit-survey-cdx"                                         "lit-survey-cdx"
 )
 
 
@@ -181,10 +196,15 @@ AGENTS_COPY_SKILLS=(
 
 CLAUDE_COPY_SKILLS=(
   # --- Planning ---
-  "${SCRIPT_DIR}/skills/plan-review"                                            "plan-review"
+  "${SCRIPT_DIR}/skills/plan-review-clc"                                        "plan-review-clc"
 
   # --- Orchestration ---
-  "${SCRIPT_DIR}/skills/orchestrate"                                            "orchestrate"
+  "${SCRIPT_DIR}/skills/orchestrate-clc"                                        "orchestrate-clc"
+
+  # --- Literature / research ---
+  "${SCRIPT_DIR}/skills/lit-review-clc"                                         "lit-review-clc"
+  "${SCRIPT_DIR}/skills/lit-summarizer-clc"                                     "lit-summarizer-clc"
+  "${SCRIPT_DIR}/skills/lit-survey-clc"                                         "lit-survey-clc"
 )
 
 
