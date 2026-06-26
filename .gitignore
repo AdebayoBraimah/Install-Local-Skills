@@ -1,0 +1,7 @@
+# Python artifacts (skills bundle Python scripts)
+__pycache__/
+*.py[cod]
+*$py.class
+
+# OS / editor cruft
+.DS_Store
