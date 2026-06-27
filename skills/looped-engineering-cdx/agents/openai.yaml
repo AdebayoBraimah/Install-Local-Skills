@@ -1,0 +1,4 @@
+interface:
+  display_name: "Looped Engineering"
+  short_description: "Long-horizon autonomous engineering loop"
+  default_prompt: "Use $looped-engineering-cdx to plan, execute, verify, and hand off a substantial coding task."

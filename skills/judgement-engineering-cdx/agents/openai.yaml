@@ -1,0 +1,4 @@
+interface:
+  display_name: "Judgement Engineering"
+  short_description: "Problem framing for fuzzy engineering goals"
+  default_prompt: "Use $judgement-engineering-cdx to decide what should be built before planning."

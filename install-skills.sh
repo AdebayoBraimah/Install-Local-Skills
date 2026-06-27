@@ -10,9 +10,6 @@
 # py_install falls back to the target interpreter's pip for non-venv targets
 # and PEP 668 (externally-managed) environments.
 
-# TODO:
-#   - Create: loop-engineer skill (loop (claude) vs goal (codex)) [do this later; this requires a lot of planning and design.]
-
 # Resolve the directory this script lives in (for local copy skills)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -167,6 +164,8 @@ CODEX_PLUGINS=(
 
 AGENTS_COPY_SKILLS=(
   # --- Planning ---
+  "${SCRIPT_DIR}/skills/judgement-engineering-cdx"                             "judgement-engineering-cdx"
+  "${SCRIPT_DIR}/skills/looped-engineering-cdx"                                "looped-engineering-cdx"
   "${SCRIPT_DIR}/skills/plan-review-cdx"                                        "plan-review-cdx"
 
   # --- Literature / research ---
