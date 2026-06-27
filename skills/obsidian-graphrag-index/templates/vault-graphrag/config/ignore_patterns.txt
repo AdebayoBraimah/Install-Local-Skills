@@ -1,0 +1,60 @@
+# Tooling and repository state
+.obsidian/
+.git/
+.trash/
+.vault-llamaindex-rag/
+.vault-graphrag/
+.claude/
+Users/
+rag/
+scripts/
+skills/
+AGENTS.md
+CLAUDE.md
+contributing.md
+
+# Note classes excluded from infrequent synthesis
+Templates/
+Inbox/
+Scratch/
+Daily Notes/
+Archive/
+tmp/
+temp/
+Ideas/Meetings/
+meeting-*.md
+
+# Generated exports and dependency/cache directories
+*_exports/
+*exports*/
+node_modules/
+.cache/
+__pycache__/
+logs/
+cache/
+venv/
+.venv/
+
+# Binary/media source files are not direct documents
+*.pdf
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.tif
+*.tiff
+*.bmp
+*.svg
+*.drawio
+*.excalidraw
+*.ppt
+*.pptx
+*.doc
+*.docx
+*.xls
+*.xlsx
+*.zip
+*.tar
+*.gz
+*.7z

@@ -5,18 +5,13 @@
 #
 # Target agents: claude-code, antigravity
 # NOTE: codex and gemini are universal and already handled.
+#
+# Python installs default to uv (the script bootstraps it via pip if absent);
+# py_install falls back to the target interpreter's pip for non-venv targets
+# and PEP 668 (externally-managed) environments.
 
 # TODO:
-#   - Add lit-<skills> from claude code [later; requires more work]
-#   - Create/modify lit-skills for codex [later; requires more work]
-#   - Add pangram (and ai-anti-pattern-review) skills
-#   - Add: ponytail (https://github.com/DietrichGebert/ponytail)
-#   - Add: codebase-memory-mcp (https://github.com/DeusData/codebase-memory-mcp)
-#   - Add: SkillSpector (https://github.com/nvidia/skillspector)
-#     - NOTE: Have this installed first to inspect other skills for security issues (e.g., gsd)
-#   - Remove: orchestrat* skills
-#   - Create: alert-me skill (Alert me via the ntfy skill at https://ntfy.sh/ab-mac when you finish the task OR if you stop the task for any reason.)
-#   - Create: loop-engineer skill (loop (claude) vs goal (codex))
+#   - Create: loop-engineer skill (loop (claude) vs goal (codex)) [do this later; this requires a lot of planning and design.]
 
 # Resolve the directory this script lives in (for local copy skills)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -69,6 +64,9 @@ SKILLS=(
 
   # --- CLI ---
   "hkuds/cli-anything"                                                          "cli-anything"
+
+  # --- Code quality ---
+  "dietrichgebert/ponytail"                                                     "ponytail"
 )
 
 
@@ -83,6 +81,8 @@ SKILLS=(
 # =========================================================================
 
 MCP_SERVERS=(
+  # --- Codebase memory (persistent project memory MCP server) ---
+  "codebase-memory-mcp"   "user"   "npx -y codebase-memory-mcp"
 )
 
 
@@ -169,9 +169,6 @@ AGENTS_COPY_SKILLS=(
   # --- Planning ---
   "${SCRIPT_DIR}/skills/plan-review-cdx"                                        "plan-review-cdx"
 
-  # --- Orchestration ---
-  "${SCRIPT_DIR}/skills/orchestrator-cdx"                                       "orchestrator-cdx"
-
   # --- Literature / research ---
   "${SCRIPT_DIR}/skills/lit-review-cdx"                                         "lit-review-cdx"
   "${SCRIPT_DIR}/skills/lit-summarizer-cdx"                                     "lit-summarizer-cdx"
@@ -195,9 +192,6 @@ AGENTS_COPY_SKILLS=(
 CLAUDE_COPY_SKILLS=(
   # --- Planning ---
   "${SCRIPT_DIR}/skills/plan-review-clc"                                        "plan-review-clc"
-
-  # --- Orchestration ---
-  "${SCRIPT_DIR}/skills/orchestrate-clc"                                        "orchestrate-clc"
 
   # --- Literature / research ---
   "${SCRIPT_DIR}/skills/lit-review-clc"                                         "lit-review-clc"
@@ -233,34 +227,35 @@ COPY_SKILLS=(
 
   # --- Writing / AI detection ---
   "${SCRIPT_DIR}/skills/pangram"                                                "pangram"
+
+  # --- Writing review ---
+  "${SCRIPT_DIR}/skills/ai-anti-pattern-review"                                 "ai-anti-pattern-review"
+
+  # --- Obsidian / RAG ---
+  "${SCRIPT_DIR}/skills/obsidian-graphrag-index"                                "obsidian-graphrag-index"
+  "${SCRIPT_DIR}/skills/obsidian-llamaindex-vector-indexing"                    "obsidian-llamaindex-vector-indexing"
+
+  # --- Notifications ---
+  "${SCRIPT_DIR}/skills/alert-me"                                               "alert-me"
 )
 
-# Patched fork of ctsstc/get-shit-done-skills vendored as a submodule
-# (removes .env* glob + "Secrets location" template — secret-leak fix).
-# If the submodule is uninitialized we skip installing the patched copy
-# AND remove any pre-existing upstream-installed gsd so the user is not
-# left running the unsafe upstream skill.
-GSD_SUBMODULE="${SCRIPT_DIR}/submodules/get-shit-done-skills"
-GSD_SOURCE="${GSD_SUBMODULE}/.kilocode/skills/gsd"
-GSD_VULN_FILE="${GSD_SOURCE}/agents/codebase-mapper/SKILL.md"
-if [[ -f "${GSD_VULN_FILE}" ]]; then
-  COPY_SKILLS+=("${GSD_SOURCE}" "gsd")
-else
-  # NOTE: echo_yellow is defined later in the script, so this block uses
-  # plain echo with inline ANSI yellow to stay independent of helper order.
-  printf '\033[33m%s\033[0m\n' "Note: submodules/get-shit-done-skills is not initialized — skipping gsd."
-  printf '\033[33m%s\033[0m\n' "  To enable, run: git submodule update --init --recursive"
-  # Fail-closed: remove stale upstream-installed gsd to prevent the
-  # vulnerable version from continuing to be active after the swap.
-  for stale in "${HOME}/.agents/skills/gsd" \
-               "${HOME}/.claude/skills/gsd" \
-               "${HOME}/.gemini/antigravity/skills/gsd"; do
-    if [[ -e "${stale}" || -L "${stale}" ]]; then
-      printf '\033[33m%s\033[0m\n' "  Removing stale gsd install: ${stale}"
-      rm -rf "${stale}"
-    fi
-  done
-fi
+# gsd has been removed from this installer (its only consumer, orchestrate,
+# is also removed). Fail-closed teardown runs unconditionally so any stale
+# gsd install — including the unsafe upstream version with the .env* glob +
+# "Secrets location" secret-leak template — is removed everywhere it could
+# still be active. The submodules/get-shit-done-skills checkout is left on
+# disk (unused; optionally `git submodule deinit` later).
+# NOTE: echo_yellow is defined later in the script, so this block uses
+# plain echo with inline ANSI yellow to stay independent of helper order.
+printf '\033[33m%s\033[0m\n' "Note: gsd is no longer installed by this script — removing any stale gsd installs."
+for stale in "${HOME}/.agents/skills/gsd" \
+             "${HOME}/.claude/skills/gsd" \
+             "${HOME}/.gemini/antigravity/skills/gsd"; do
+  if [[ -e "${stale}" || -L "${stale}" ]]; then
+    printf '\033[33m%s\033[0m\n' "  Removing stale gsd install: ${stale}"
+    rm -rf "${stale}"
+  fi
+done
 
 # AdebayoBraimah/claude-deep-research-skill vendored as a submodule so the
 # installed copy is pinned to a known commit rather than tracking the
@@ -326,7 +321,6 @@ ENGINEERING_SKILLS=(
   "mattpocock/skills"                                                           "to-issues"
 
   # --- Productivity (upstream skills/productivity/) ---
-  "mattpocock/skills"                                                           "caveman"
   "mattpocock/skills"                                                           "handoff"
   "mattpocock/skills"                                                           "write-a-skill"
 )
@@ -518,8 +512,8 @@ Usage(){
         - Engineering + productivity skills — via npx skills
           add (Matt Pocock's TDD, diagnose, grill-me,
           grill-with-docs, improve-codebase-architecture,
-          triage, zoom-out, to-prd, to-issues, caveman,
-          handoff, write-a-skill, and the
+          triage, zoom-out, to-prd, to-issues, handoff,
+          write-a-skill, and the
           setup-matt-pocock-skills bootstrap).
 
       --eng is independent of --local, --math, and
@@ -541,8 +535,16 @@ Usage(){
 
       Phase 1 requires npx. Phases 2 and 8 require the
       claude CLI. Phases 3 and 9 require the codex CLI.
-      Local pip packages require pip. Missing CLIs cause
-      the corresponding phases to be skipped.
+      Local pip packages require uv or pip. Missing CLIs
+      cause the corresponding phases to be skipped.
+
+      Python installs default to uv. If uv is not found it
+      is bootstrapped via pip (--user, with a PEP 668
+      --break-system-packages retry); when uv is unavailable
+      the script falls back to the target interpreter's pip.
+      SkillSpector (a skill security scanner) is installed
+      via uv first, then scans the installed skills after all
+      install phases (detection-after-fetch, non-fatal).
 
       --repo-tools requires Python >=3.10 (which python is
       consulted first so an activated conda env wins) and
@@ -600,7 +602,7 @@ Usage(){
                                       of --local and --math.
       --eng, --engineering            Also install Matt Pocock's
                                       engineering + productivity skills
-                                      (TDD, grill-me, to-issues, caveman,
+                                      (TDD, grill-me, to-issues,
                                       write-a-skill, etc.).
                                       Independent of --local, --math,
                                       and --repo-tools.
@@ -862,6 +864,156 @@ detect_python_310(){
     fi
   done
   return 1
+}
+
+
+#######################################
+# Installs a Python library (importable
+#   package) into an explicit interpreter,
+#   preferring uv and falling back to that
+#   interpreter's pip. Reserved for
+#   libraries — standalone CLIs use
+#   `uv tool install` instead.
+#
+#   Always targets an explicit interpreter
+#   (no --system, which bypasses venvs and
+#   trips PEP 668). uv refuses non-venv
+#   --python targets, so ANY uv non-zero
+#   exit falls back to pip. PEP 668 pip
+#   failures retry with
+#   --break-system-packages.
+# Arguments:
+#   pkg:           pip package spec
+#   target_python: interpreter to install into (required)
+#   extra_flags:   optional extra flags (e.g. --upgrade)
+# Globals:
+#   uv_ready (read)
+# Returns:
+#   Exit status of the LAST attempted
+#   installer — non-zero only when BOTH uv
+#   and the pip fallback fail. No trailing
+#   log masks this status; callers gate on it.
+#######################################
+py_install(){
+  local pkg="${1}"
+  local target_python="${2}"
+  shift 2
+  local -a extra_flags=("${@}")
+
+  if [[ -z "${target_python}" ]]; then
+    echo_red "  -> py_install: no target interpreter given for ${pkg}"
+    return 2
+  fi
+
+  if [[ "${uv_ready}" == true ]]; then
+    echo_blue "  -> uv pip install --python ${target_python} ${extra_flags[*]} ${pkg}"
+    if uv pip install --python "${target_python}" "${extra_flags[@]}" "${pkg}"; then
+      return 0
+    fi
+    echo_yellow "  -> uv install failed (uv refuses non-venv/non-conda targets); falling back to ${target_python} -m pip"
+  fi
+
+  # pip fallback: uv unavailable OR uv returned non-zero.
+  if "${target_python}" -m pip install "${extra_flags[@]}" "${pkg}"; then
+    return 0
+  fi
+  # PEP 668 externally-managed-environment retry.
+  echo_yellow "  -> pip install failed; retrying with --break-system-packages"
+  "${target_python}" -m pip install --break-system-packages "${extra_flags[@]}" "${pkg}"
+  return "${?}"
+}
+
+
+#######################################
+# Installs SkillSpector (NVIDIA) as a uv
+#   tool so it can scan installed skills
+#   for security issues. Best-effort and
+#   non-fatal: warns if uv or the network
+#   is unavailable.
+# Globals:
+#   uv_ready (read)
+#   skillspector_ready (set)
+#######################################
+install_skillspector(){
+  skillspector_ready=false
+
+  echo
+  echo_blue "=========================================="
+  echo_blue " Installing SkillSpector (skill security scanner)"
+  echo_blue "=========================================="
+  echo
+
+  if [[ "${uv_ready}" != true ]] && ! command -v uv &>/dev/null; then
+    echo_yellow "uv not available — skipping SkillSpector install (skill security scan will be skipped)."
+    echo
+    return 0
+  fi
+
+  if uv tool install git+https://github.com/NVIDIA/skillspector.git; then
+    if command -v skillspector &>/dev/null; then
+      skillspector_ready=true
+      echo_green "  -> SkillSpector installed successfully"
+    else
+      echo_yellow "  -> SkillSpector installed but 'skillspector' is not on PATH (is ~/.local/bin on PATH?) — scan will be skipped"
+    fi
+  else
+    echo_yellow "  -> Failed to install SkillSpector (network or uv tool issue) — scan will be skipped"
+  fi
+  echo
+}
+
+
+#######################################
+# Scans installed skill directories with
+#   SkillSpector AFTER skills are fetched,
+#   so remote (npx) skills — the highest
+#   risk — are actually inspected. This is
+#   detection-after-fetch, NOT pre-activation
+#   gating. Non-fatal; findings are surfaced
+#   loudly for the summary.
+# Globals:
+#   skillspector_ready (read)
+#######################################
+run_skillspector_scan(){
+  [[ "${skillspector_ready}" == true ]] || return 0
+
+  echo
+  echo_blue "=========================================="
+  echo_blue " SkillSpector scan (skill security review)"
+  echo_blue "=========================================="
+  echo_yellow " Detection-after-fetch: inspects already-installed skills"
+  echo_yellow " (including remote npx-fetched skills). NOT pre-activation gating."
+  echo
+
+  local -a scan_dirs=()
+  # Canonical agents skills dir — covers shared + agents-only copy skills AND
+  # the npx-global skills that `npx skills add --global` writes here.
+  [[ -d "${HOME}/.agents/skills" ]] && scan_dirs+=("${HOME}/.agents/skills")
+  # Claude-only real skill dirs. Skip symlinks (the shared COPY_SKILLS create
+  # ~/.claude/skills/* -> ~/.agents/skills/* links) to avoid double-scanning.
+  if [[ -d "${HOME}/.claude/skills" ]]; then
+    local entry
+    for entry in "${HOME}/.claude/skills"/*; do
+      [[ -e "${entry}" ]] || continue
+      [[ -L "${entry}" ]] && continue
+      scan_dirs+=("${entry}")
+    done
+  fi
+
+  if [[ ${#scan_dirs[@]} -eq 0 ]]; then
+    echo_yellow " No skill directories found to scan."
+    echo
+    return 0
+  fi
+
+  local d
+  for d in "${scan_dirs[@]}"; do
+    echo_blue " Scanning: ${d}"
+    # --no-llm keeps the scan offline (no API key needed); non-fatal on findings.
+    skillspector scan "${d}" --no-llm \
+      || echo_yellow "  -> SkillSpector reported findings or errored for ${d} (non-fatal)"
+  done
+  echo
 }
 
 
@@ -1146,7 +1298,10 @@ install_repo_tool_pip(){
   local graphify_tmp
 
   echo_blue "Installing repo-tool pip package: ${pkg}  (using ${python})"
-  if "${python}" -m pip install --upgrade "${pkg}"; then
+  # py_install's per-call pip fallback guarantees the package lands in
+  # ${python} (conda-aware) even when uv refuses a non-venv --python target,
+  # so the graphify registration below runs against the right interpreter.
+  if py_install "${pkg}" "${python}" --upgrade; then
     echo_green "  -> ${pkg} installed successfully"
 
     if [[ "${pkg}" == graphifyy* ]]; then
@@ -1228,22 +1383,26 @@ install_repo_tool_npm(){
 # Installs a single pip package using
 #   pip install.
 # Arguments:
-#   pkg: pip package name
+#   pkg:    pip package name
+#   python: interpreter to install into
 # Globals:
 #   FAILED_PIPS (appended on failure)
 #######################################
 install_pip_package(){
   local pkg="${1}"
+  local python="${2}"
 
-  echo_blue "Installing pip package: ${pkg}"
+  echo_blue "Installing pip package: ${pkg}  (using ${python})"
 
-  if pip install "${pkg}"; then
+  if py_install "${pkg}" "${python}"; then
     echo_green "  -> ${pkg} installed successfully"
 
-    # playwright requires a post-install step to download Chromium
+    # playwright requires a post-install step to download Chromium. Run it
+    # against the SAME interpreter (not the bare `playwright` console script,
+    # which may resolve to a different environment).
     if [[ "${pkg}" == "playwright" ]]; then
       echo_blue "  -> Running playwright install chromium..."
-      if playwright install chromium; then
+      if "${python}" -m playwright install chromium; then
         echo_green "  -> Playwright Chromium installed successfully"
       else
         echo_red "  -> Failed to install Playwright Chromium"
@@ -1693,6 +1852,55 @@ main(){
     local skip_codex=true
   fi
 
+  #
+  # uv bootstrap (default Python installer)
+  #============================
+  # uv is the default Python installer for this script: libraries via
+  # `uv pip install` (py_install), standalone CLIs like SkillSpector via
+  # `uv tool install`. If uv is missing, bootstrap it via pip --user
+  # (honoring PEP 668). py_install falls back to each caller's interpreter's
+  # pip when uv is unavailable or refuses a non-venv target.
+  uv_ready=false
+  if command -v uv &>/dev/null; then
+    uv_ready=true
+    echo_green "uv found: $(command -v uv)"
+  else
+    local boot_py=""
+    if ! boot_py="$(detect_python_310)"; then
+      if command -v python3 &>/dev/null; then
+        boot_py="$(command -v python3)"
+      fi
+    fi
+    if [[ -n "${boot_py}" ]]; then
+      echo_blue "uv not found — bootstrapping via pip (using ${boot_py})..."
+      if ! "${boot_py}" -m pip install --user uv; then
+        # macOS Homebrew/system Python commonly needs PEP 668 override.
+        "${boot_py}" -m pip install --user --break-system-packages uv || true
+      fi
+      # pip --user console scripts land under python's user-base bin
+      # (macOS: ~/Library/Python/3.x/bin, NOT ~/.local/bin). Compute it.
+      # Keep ~/.local/bin too — uv's own tool bin (SkillSpector) lives there.
+      local userbase=""
+      userbase="$("${boot_py}" -m site --user-base 2>/dev/null)"
+      [[ -n "${userbase}" ]] && export PATH="${userbase}/bin:${HOME}/.local/bin:${PATH}"
+      if command -v uv &>/dev/null; then
+        uv_ready=true
+        echo_green "uv bootstrapped: $(command -v uv)"
+      else
+        echo_yellow "uv bootstrap failed — Python installs will use pip directly."
+      fi
+    else
+      echo_yellow "No Python found to bootstrap uv — Python installs will use pip directly."
+    fi
+  fi
+
+  # Ensure uv's tool bin is on PATH so `skillspector` resolves post-install.
+  export PATH="${HOME}/.local/bin:${PATH}"
+
+  # Install SkillSpector first so the post-fetch scan can inspect every
+  # installed skill (including remote npx-fetched ones).
+  install_skillspector
+
   if [[ "${install_repo_tools}" == true ]]; then
     if ! command -v gemini &>/dev/null; then
       echo_yellow "gemini CLI not found — skipping Gemini MCP server registration."
@@ -1709,8 +1917,14 @@ main(){
   fi
 
   if [[ "${install_local}" == true ]]; then
-    if ! command -v pip &>/dev/null; then
-      echo_yellow "pip not found — skipping local pip package installation."
+    # The local pip phase prefers uv; the fallback uses "<py> -m pip". Only
+    # skip when neither uv nor any "python -m pip" is available — a uv-only or
+    # `python -m pip`-only machine (no bare `pip` shim) must NOT be skipped.
+    local _lp_py=""
+    _lp_py="$(detect_python_310 2>/dev/null)" || _lp_py=""
+    if [[ "${uv_ready}" != true ]] \
+       && { [[ -z "${_lp_py}" ]] || ! "${_lp_py}" -m pip --version >/dev/null 2>&1; }; then
+      echo_yellow "Neither uv nor 'python -m pip' available — skipping local pip package installation."
       local skip_pip=true
     fi
 
@@ -1906,9 +2120,17 @@ main(){
     echo_blue "=========================================="
     echo
 
-    for pkg in "${LOCAL_PIP_PACKAGES[@]}"; do
-      install_pip_package "${pkg}"
-    done
+    # Resolve one interpreter for the whole phase (active python / detect).
+    local local_pip_py=""
+    if ! local_pip_py="$(detect_python_310)"; then
+      echo_red "No Python >=3.10 found for local pip packages — skipping."
+      FAILED_PIPS+=("${LOCAL_PIP_PACKAGES[@]}")
+    else
+      echo_blue "Using Python: ${local_pip_py}"
+      for pkg in "${LOCAL_PIP_PACKAGES[@]}"; do
+        install_pip_package "${pkg}" "${local_pip_py}"
+      done
+    fi
   fi
 
   #
@@ -2183,6 +2405,13 @@ main(){
       fi
     fi
   fi
+
+  #
+  # SkillSpector scan (after all install phases, before the summary)
+  #============================
+  # Runs after every install phase (skills, copy/local/math/repo-tools) so
+  # all installed skills — including remote npx-fetched ones — are inspected.
+  run_skillspector_scan
 
   #
   # Summary

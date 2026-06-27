@@ -1,0 +1,16 @@
+vault_path: ".."
+graphrag_dir: "."
+workspace_path: "workspace"
+input_json_path: "workspace/input/obsidian_graphrag_input.json"
+manifest_path: "manifests/graphrag_input_manifest.json"
+ignore_patterns_path: "config/ignore_patterns.txt"
+include_globs:
+  - "*.md"
+  - "Ideas/**/*.md"
+  - "Reference-notes/**/*.md"
+  - "misc/**/*.md"
+  - "**/*.md"
+referenced_image_dirs:
+  - "Files/Images"
+image_context_lines: 3
+image_context_chars: 1000

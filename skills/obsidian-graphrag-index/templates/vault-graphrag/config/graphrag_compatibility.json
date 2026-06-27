@@ -1,0 +1,36 @@
+{
+  "checked_at": "2026-06-22T02:24:44.534297+00:00",
+  "cli": {
+    "index": [
+      "--root",
+      "--method",
+      "--dry-run"
+    ],
+    "query": [
+      "--root",
+      "--method"
+    ]
+  },
+  "generated_by": "vault-graphrag-setup",
+  "graphrag_version": "3.1.0",
+  "input_contract": {
+    "file_pattern": "^obsidian_graphrag_input\\.json$",
+    "file_type": "json",
+    "metadata": [
+      "source_path",
+      "sha256",
+      "mtime_ns",
+      "tags",
+      "aliases",
+      "keywords",
+      "category",
+      "wikilinks",
+      "image_refs",
+      "sidecar_paths",
+      "warning_count"
+    ],
+    "text_column": "text",
+    "title_column": "title",
+    "type": "file"
+  }
+}

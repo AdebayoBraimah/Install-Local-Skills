@@ -1,0 +1,54 @@
+models:
+  default_chat_model:
+    type: openai_chat
+    auth_type: api_key
+    api_key: ${GRAPHRAG_API_KEY}
+    model: ${GRAPHRAG_MODEL}
+  default_embedding_model:
+    type: openai_embedding
+    auth_type: api_key
+    api_key: ${GRAPHRAG_API_KEY}
+    model: ${GRAPHRAG_EMBEDDING_MODEL}
+
+input:
+  type: file
+  file_type: json
+  base_dir: input
+  file_pattern: ^obsidian_graphrag_input\.json$$
+  text_column: text
+  title_column: title
+  metadata:
+    - source_path
+    - sha256
+    - mtime_ns
+    - tags
+    - aliases
+    - keywords
+    - category
+    - wikilinks
+    - image_refs
+    - sidecar_paths
+    - warning_count
+
+chunks:
+  size: 1200
+  overlap: 100
+  prepend_metadata:
+    - source_path
+    - tags
+    - aliases
+    - keywords
+    - category
+    - wikilinks
+
+output:
+  type: file
+  base_dir: output
+
+cache:
+  type: file
+  base_dir: cache
+
+reporting:
+  type: file
+  base_dir: logs

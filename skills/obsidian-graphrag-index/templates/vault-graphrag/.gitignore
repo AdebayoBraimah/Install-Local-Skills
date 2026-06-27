@@ -1,0 +1,24 @@
+# Runtime workspace
+workspace/.env
+workspace/input/
+workspace/output/
+workspace/cache/
+workspace/logs/
+workspace/prompts/
+workspace/settings.yaml
+
+# Local generated state
+config/active_env.json
+manifests/
+logs/
+.conda/
+
+# Python/cache artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# GraphRAG sidecars and local outputs
+*.parquet
+*.sidecar.json
+*.manifest.json

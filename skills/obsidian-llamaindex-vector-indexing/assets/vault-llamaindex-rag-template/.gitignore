@@ -1,0 +1,10 @@
+chroma_db/
+cache/
+logs/
+.pytest_cache/
+__pycache__/
+*.py[cod]
+*.log
+*.tmp
+*.bak
+

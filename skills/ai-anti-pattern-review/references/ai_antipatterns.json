@@ -1,0 +1,576 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "source_title": "The AI-isms of Writing-Bible",
+    "source_url": "https://docs.google.com/document/d/1l3OLrnWaXUqH0ycS-0so65Hd6ayxSQqUypRtrFHMt3M/edit?tab=t.0#heading=h.hy8y46e03cgm",
+    "source_export_format": "txt",
+    "source_sha256": "c86546fc1c8fb9bf33387094bbaa9a19dc38d5a909c6c25acb3ea671358fe2cd",
+    "source_version": "1.0",
+    "source_last_updated": "2024",
+    "source_contributors": 25,
+    "source_total_patterns": 47,
+    "reviewed_plan_expected_count": 18,
+    "actual_pattern_count": 20,
+    "most_severe": [
+      "em_dashes",
+      "delve_syndrome",
+      "not_x_but_y",
+      "rule_of_three",
+      "unmotivated_metaphors"
+    ],
+    "extraction_notes": [
+      "The reviewed implementation plan expected 18 concrete pattern leaves, but the current exported source contains 20; all current source leaves were preserved.",
+      "Normalized the malformed smart_quotes example string from the text export into valid JSON.",
+      "Preserved Unicode characters needed for detection, including em dashes, curly quotes, and bullet glyphs."
+    ]
+  },
+  "master_prompt_instructions": {
+    "comprehensive": "Write naturally without: em dashes (use commas/periods), the words 'delve/moreover/furthermore/albeit/indeed', 'not X but Y' constructions, rhetorical question-answer pairs, groups of three, bullet points, section headers, excessive emphasis (bold/italics), metaphorical cliches ('symphony of', 'tapestry of'), or explanatory phrases ('which was surprising because'). Use concrete descriptions, varied sentence structures, and conversational tone with personality.",
+    "short": "Avoid em dashes, 'delve', rhetorical patterns, and cliches. Write naturally with varied structures.",
+    "strict": "FORBIDDEN: em dashes, delve, moreover, furthermore, bullet points, 'Let's dive in', rule of three, 'not X but Y', metaphors about symphonies/tapestries, rhetorical Q&A"
+  },
+  "patterns": [
+    {
+      "id": "em_dashes",
+      "category": "punctuation_grammar",
+      "description": "Excessive use of em dashes for breaks and emphasis",
+      "severity": 5,
+      "examples": [
+        "The sky \u2014 dark and brooding \u2014 seemed to mirror his mood \u2014 perfectly.",
+        "She wasn't just tired \u2014 she was exhausted \u2014 completely drained."
+      ],
+      "frequency": "Multiple per paragraph, sometimes per sentence",
+      "fixes": [
+        "Limit to 1-2 per page maximum",
+        "Replace with commas, periods, or restructure sentences",
+        "Use only for genuine interruptions or strong emphasis"
+      ],
+      "prompt_instruction": "Limit em dashes to maximum one per 500 words. Use commas, periods, or sentence restructuring instead.",
+      "detectors": [
+        {
+          "type": "density",
+          "targets": [
+            "\u2014"
+          ],
+          "max_per_words": 500,
+          "threshold": 2,
+          "confidence": "high"
+        }
+      ]
+    },
+    {
+      "id": "ellipses_dramatic",
+      "category": "punctuation_grammar",
+      "description": "Overuse of ellipses for false drama",
+      "severity": 3,
+      "examples": [
+        "And then... silence...",
+        "She waited... and waited... for an answer..."
+      ],
+      "frequency": "End of paragraphs, dramatic moments",
+      "fixes": [
+        "Use periods",
+        "Remove entirely",
+        "Only for actual trailing off"
+      ],
+      "prompt_instruction": "Avoid ellipses except when showing genuine interrupted speech or thought.",
+      "detectors": [
+        {
+          "type": "regex",
+          "pattern": "\\.\\.\\.",
+          "flags": "i",
+          "confidence": "high"
+        }
+      ]
+    },
+    {
+      "id": "smart_quotes",
+      "category": "punctuation_grammar",
+      "description": "Curly/slanted quotes instead of straight",
+      "severity": 2,
+      "examples": [
+        "Using \"these\" instead of \"these\""
+      ],
+      "frequency": "All dialogue and quotes",
+      "fixes": [
+        "Use straight quotes consistently"
+      ],
+      "prompt_instruction": "Use straight quotes (\") not curly quotes.",
+      "detectors": [
+        {
+          "type": "literal",
+          "terms": [
+            "\u201c",
+            "\u201d",
+            "\u2018",
+            "\u2019"
+          ],
+          "word_boundary": false,
+          "case_sensitive": true,
+          "confidence": "high"
+        }
+      ]
+    },
+    {
+      "id": "delve_syndrome",
+      "category": "overused_words",
+      "description": "Obsessive use of 'delve' and academic language",
+      "severity": 5,
+      "examples": [
+        "Let's delve into this topic",
+        "We must delve deeper into the implications"
+      ],
+      "frequency": "Opening sentences, transitions",
+      "fixes": [
+        "Use 'explore', 'examine', 'look at', or remove entirely"
+      ],
+      "prompt_instruction": "Never use the words: delve, moreover, furthermore, albeit, indeed, certainly",
+      "detectors": [
+        {
+          "type": "literal",
+          "terms": [
+            "delve",
+            "delves",
+            "delved",
+            "delving"
+          ],
+          "word_boundary": true,
+          "case_sensitive": false,
+          "confidence": "high"
+        }
+      ]
+    },
+    {
+      "id": "transition_addiction",
+      "category": "overused_words",
+      "description": "Overuse of formal transition words",
+      "severity": 4,
+      "examples": [
+        "Moreover, the situation deteriorated",
+        "Furthermore, we must consider",
+        "Indeed, this is certainly true"
+      ],
+      "frequency": "Every paragraph transition",
+      "fixes": [
+        "Remove most transitions",
+        "Use natural flow",
+        "Start directly with content"
+      ],
+      "prompt_instruction": "Avoid transition words like moreover, furthermore, however, nevertheless. Use natural sentence flow.",
+      "detectors": [
+        {
+          "type": "literal",
+          "terms": [
+            "moreover",
+            "furthermore",
+            "indeed",
+            "certainly",
+            "however",
+            "nevertheless"
+          ],
+          "word_boundary": true,
+          "case_sensitive": false,
+          "confidence": "high"
+        }
+      ]
+    },
+    {
+      "id": "metaphor_cliches",
+      "category": "overused_words",
+      "description": "Overused metaphorical phrases",
+      "severity": 4,
+      "examples": [
+        "a symphony of colors",
+        "a tapestry of emotions",
+        "a delicate balance",
+        "a testament to",
+        "nestled in"
+      ],
+      "frequency": "Every description",
+      "fixes": [
+        "Use concrete descriptions",
+        "Avoid metaphors unless essential"
+      ],
+      "prompt_instruction": "Avoid metaphorical cliches. Use specific, concrete descriptions instead of 'symphony of', 'tapestry of', 'testament to'.",
+      "detectors": [
+        {
+          "type": "literal",
+          "terms": [
+            "symphony of",
+            "tapestry of",
+            "delicate balance",
+            "testament to",
+            "nestled in"
+          ],
+          "word_boundary": false,
+          "case_sensitive": false,
+          "confidence": "high"
+        }
+      ]
+    },
+    {
+      "id": "not_x_but_y",
+      "category": "phrase_patterns",
+      "description": "Overuse of contrasting construction",
+      "severity": 4,
+      "examples": [
+        "It's not just a storm, but a tempest",
+        "Not merely tired, but exhausted",
+        "This isn't about X, it's about Y"
+      ],
+      "frequency": "Multiple times per piece",
+      "fixes": [
+        "Choose one description",
+        "Use direct statements"
+      ],
+      "prompt_instruction": "Avoid 'not X, but Y' constructions. Make direct statements.",
+      "detectors": [
+        {
+          "type": "regex",
+          "pattern": "\\b(?:not|isn't|wasn't|aren't|weren't)\\s+(?:just|merely|only)?[^.!?\\n]{1,100}\\b(?:but|it's about)\\b",
+          "flags": "i",
+          "confidence": "medium"
+        }
+      ]
+    },
+    {
+      "id": "rhetorical_qa",
+      "category": "phrase_patterns",
+      "description": "Question immediately followed by answer",
+      "severity": 4,
+      "examples": [
+        "What did she feel? Everything and nothing.",
+        "The result? Chaos.",
+        "Why? Because it mattered."
+      ],
+      "frequency": "Paragraph openings and transitions",
+      "fixes": [
+        "Choose either question OR answer",
+        "Restructure as statement"
+      ],
+      "prompt_instruction": "Don't use rhetorical questions followed by immediate answers. Choose either question or statement.",
+      "detectors": [
+        {
+          "type": "regex",
+          "pattern": "(?:^|[.!?]\\s+)(?:What|Why|How|When|Where|Who|The result)\\b[^?\\n]{0,100}\\?\\s*[^?\\n]{1,140}(?:[.!?]|$)",
+          "flags": "i",
+          "confidence": "medium"
+        }
+      ]
+    },
+    {
+      "id": "rule_of_three",
+      "category": "phrase_patterns",
+      "description": "Everything in groups of three",
+      "severity": 5,
+      "examples": [
+        "He stopped, he stared, he listened",
+        "She was smart, capable, and determined",
+        "It was dark, cold, and forbidding"
+      ],
+      "frequency": "Every dramatic moment or description",
+      "fixes": [
+        "Vary numbers",
+        "Use different structures"
+      ],
+      "prompt_instruction": "Avoid always grouping things in threes. Vary between single items, pairs, and longer lists.",
+      "detectors": [
+        {
+          "type": "regex",
+          "pattern": "\\b[\\w'-]+(?:\\s+[\\w'-]+){0,3},\\s+[\\w'-]+(?:\\s+[\\w'-]+){0,3},\\s+(?:and\\s+)?[\\w'-]+",
+          "flags": "i",
+          "confidence": "low"
+        }
+      ]
+    },
+    {
+      "id": "bullet_point_addiction",
+      "category": "structural_issues",
+      "description": "Using bullet points in narrative text",
+      "severity": 4,
+      "examples": [
+        "She realized three things:\n\u2022 First...\n\u2022 Second...\n\u2022 Third..."
+      ],
+      "frequency": "Any list or enumeration",
+      "fixes": [
+        "Write in paragraph form",
+        "Use narrative flow"
+      ],
+      "prompt_instruction": "Never use bullet points in narrative or casual writing. Write lists as natural sentences.",
+      "detectors": [
+        {
+          "type": "structural",
+          "checks": [
+            "bullet_lines"
+          ],
+          "threshold": 1,
+          "confidence": "medium"
+        }
+      ]
+    },
+    {
+      "id": "section_headers",
+      "category": "structural_issues",
+      "description": "Breaking everything into labeled sections",
+      "severity": 3,
+      "examples": [
+        "### Understanding the Problem",
+        "### The Solution",
+        "### Moving Forward"
+      ],
+      "frequency": "Every few paragraphs",
+      "fixes": [
+        "Use natural transitions",
+        "Remove headers"
+      ],
+      "prompt_instruction": "Don't use section headers or break text into labeled parts. Use natural paragraph flow.",
+      "detectors": [
+        {
+          "type": "structural",
+          "checks": [
+            "markdown_headers"
+          ],
+          "threshold": 1,
+          "confidence": "high"
+        }
+      ]
+    },
+    {
+      "id": "preamble_syndrome",
+      "category": "structural_issues",
+      "description": "Unnecessary introductory phrases",
+      "severity": 3,
+      "examples": [
+        "Let's break it down",
+        "Let's dive into this",
+        "Let's dissect this topic"
+      ],
+      "frequency": "Opening sentences",
+      "fixes": [
+        "Start directly with content",
+        "Remove preambles"
+      ],
+      "prompt_instruction": "Start directly with content. Avoid phrases like 'Let's break it down' or 'Let's dive in'.",
+      "detectors": [
+        {
+          "type": "literal",
+          "terms": [
+            "let's break it down",
+            "let's dive into",
+            "let's dive in",
+            "let's dissect"
+          ],
+          "word_boundary": false,
+          "case_sensitive": false,
+          "confidence": "high"
+        }
+      ]
+    },
+    {
+      "id": "too_clean",
+      "category": "stylistic_quirks",
+      "description": "Overly polished, academic prose lacking personality",
+      "severity": 4,
+      "examples": [
+        "The implementation of this solution yields optimal results",
+        "This represents a significant advancement in our understanding"
+      ],
+      "frequency": "Throughout",
+      "fixes": [
+        "Add conversational tone",
+        "Include imperfections",
+        "Use varied vocabulary"
+      ],
+      "prompt_instruction": "Write conversationally with personality. Include natural imperfections and varied sentence structures.",
+      "detectors": [
+        {
+          "type": "agent_judgment",
+          "guidance": "Assess whether the prose is overly polished, generic, abstract, or academic without a clear need.",
+          "confidence": "manual"
+        }
+      ]
+    },
+    {
+      "id": "emphasis_overload",
+      "category": "stylistic_quirks",
+      "description": "Excessive use of italics and bold",
+      "severity": 3,
+      "examples": [
+        "This isn't just *important* \u2014 it's **revolutionary**",
+        "She *really* **really** meant it"
+      ],
+      "frequency": "Multiple per paragraph",
+      "fixes": [
+        "Use word choice for emphasis",
+        "Limit to one per section"
+      ],
+      "prompt_instruction": "Use emphasis (bold/italics) maximum once per 500 words. Rely on word choice and structure for emphasis.",
+      "detectors": [
+        {
+          "type": "structural",
+          "checks": [
+            "emphasis_markers"
+          ],
+          "threshold": 2,
+          "confidence": "medium"
+        }
+      ]
+    },
+    {
+      "id": "dramatic_fragments",
+      "category": "stylistic_quirks",
+      "description": "Short sentences for false drama",
+      "severity": 3,
+      "examples": [
+        "She waited. And waited. Nothing happened.",
+        "It was over. Finally. Completely."
+      ],
+      "frequency": "Climactic moments",
+      "fixes": [
+        "Vary sentence length naturally",
+        "Avoid forced drama"
+      ],
+      "prompt_instruction": "Vary sentence length naturally. Avoid using fragments for dramatic effect.",
+      "detectors": [
+        {
+          "type": "regex",
+          "pattern": "(?:^|[.!?]\\s+)(?:And\\s+\\w+|Finally|Completely|Nothing happened)\\.",
+          "flags": "i",
+          "confidence": "low"
+        }
+      ]
+    },
+    {
+      "id": "unmotivated_metaphors",
+      "category": "content_patterns",
+      "description": "Random, nonsensical comparisons",
+      "severity": 5,
+      "examples": [
+        "She walked across the floor like an angry octopus after a bad haircut",
+        "His voice was like sandpaper on silk"
+      ],
+      "frequency": "When asked to be 'descriptive'",
+      "fixes": [
+        "Remove unless genuinely helpful",
+        "Use concrete descriptions"
+      ],
+      "prompt_instruction": "Only use metaphors that genuinely clarify meaning. Prefer concrete descriptions.",
+      "detectors": [
+        {
+          "type": "agent_judgment",
+          "guidance": "Look for metaphors or similes that feel random, strained, or disconnected from the subject.",
+          "confidence": "manual"
+        }
+      ]
+    },
+    {
+      "id": "telling_not_showing",
+      "category": "content_patterns",
+      "description": "Explaining rather than demonstrating",
+      "severity": 4,
+      "examples": [
+        "which was surprising because he had expected this",
+        "She was angry, which showed in her expression"
+      ],
+      "frequency": "After every action",
+      "fixes": [
+        "Show through action",
+        "Remove explanations"
+      ],
+      "prompt_instruction": "Show emotions and reactions through actions and dialogue, don't explain them.",
+      "detectors": [
+        {
+          "type": "agent_judgment",
+          "guidance": "Check whether emotions, reactions, or motivations are explained after the fact instead of shown through action or dialogue.",
+          "confidence": "manual"
+        }
+      ]
+    },
+    {
+      "id": "redundant_descriptions",
+      "category": "content_patterns",
+      "description": "Multiple similar adjectives",
+      "severity": 3,
+      "examples": [
+        "dark and brooding",
+        "loud and brash",
+        "quick and agile"
+      ],
+      "frequency": "Every description",
+      "fixes": [
+        "Choose strongest single adjective",
+        "Remove redundancy"
+      ],
+      "prompt_instruction": "Use single, specific adjectives. Avoid redundant pairs like 'dark and brooding'.",
+      "detectors": [
+        {
+          "type": "literal",
+          "terms": [
+            "dark and brooding",
+            "loud and brash",
+            "quick and agile"
+          ],
+          "word_boundary": false,
+          "case_sensitive": false,
+          "confidence": "high"
+        }
+      ]
+    },
+    {
+      "id": "romance_cliches",
+      "category": "genre_specific",
+      "description": "Overused romantic gestures and descriptions",
+      "severity": 3,
+      "examples": [
+        "He pressed his forehead against hers",
+        "He leaned forward, resting his elbows on the counter",
+        "lips swollen with kisses",
+        "blooming like a promise"
+      ],
+      "frequency": "Every romantic scene",
+      "fixes": [
+        "Find unique gestures",
+        "Vary physical descriptions"
+      ],
+      "prompt_instruction": "Avoid cliched romantic gestures. Create unique, specific physical interactions.",
+      "detectors": [
+        {
+          "type": "literal",
+          "terms": [
+            "pressed his forehead against hers",
+            "resting his elbows on the counter",
+            "lips swollen with kisses",
+            "blooming like a promise"
+          ],
+          "word_boundary": false,
+          "case_sensitive": false,
+          "confidence": "high"
+        }
+      ]
+    },
+    {
+      "id": "dialogue_patterns",
+      "category": "genre_specific",
+      "description": "Repetitive dialogue structures",
+      "severity": 3,
+      "examples": [
+        "Character A: 'You did that.' Character B: 'I didn't do that, I did this.'",
+        "Self-answering questions in dialogue"
+      ],
+      "frequency": "Most dialogue exchanges",
+      "fixes": [
+        "Vary dialogue structure",
+        "Make responses less predictable"
+      ],
+      "prompt_instruction": "Write natural dialogue without repetitive patterns or self-answering questions.",
+      "detectors": [
+        {
+          "type": "agent_judgment",
+          "guidance": "Inspect dialogue for repetitive contradiction-response patterns or characters answering their own questions.",
+          "confidence": "manual"
+        }
+      ]
+    }
+  ]
+}
+

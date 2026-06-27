@@ -1,0 +1,70 @@
+{
+  "skill_name": "ai-anti-pattern-review",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Review evals/fixtures/ai_heavy.txt for AI writing anti-patterns.",
+      "input_fixture": "evals/fixtures/ai_heavy.txt",
+      "expected_detected_ids": [
+        "em_dashes",
+        "delve_syndrome",
+        "transition_addiction",
+        "not_x_but_y",
+        "rhetorical_qa",
+        "section_headers",
+        "bullet_point_addiction",
+        "emphasis_overload"
+      ],
+      "expected_manual_ids": [
+        "too_clean",
+        "unmotivated_metaphors",
+        "telling_not_showing"
+      ],
+      "forbidden_ids": [],
+      "min_severity": 1,
+      "expected_output": "A findings report that flags the named deterministic IDs with evidence and lists relevant manual-review patterns."
+    },
+    {
+      "id": 2,
+      "prompt": "Review evals/fixtures/subtle.txt for subtle AI writing anti-patterns.",
+      "input_fixture": "evals/fixtures/subtle.txt",
+      "expected_detected_ids": [],
+      "expected_manual_ids": [
+        "too_clean",
+        "telling_not_showing"
+      ],
+      "forbidden_ids": [
+        "em_dashes",
+        "delve_syndrome",
+        "section_headers",
+        "bullet_point_addiction"
+      ],
+      "min_severity": 4,
+      "expected_output": "A report that does not invent deterministic matches, but uses manual review guidance to assess overly polished prose and telling-not-showing."
+    },
+    {
+      "id": 3,
+      "prompt": "Review evals/fixtures/clean.txt for high-severity AI writing anti-patterns.",
+      "input_fixture": "evals/fixtures/clean.txt",
+      "expected_detected_ids": [],
+      "expected_manual_ids": [
+        "too_clean",
+        "unmotivated_metaphors",
+        "telling_not_showing"
+      ],
+      "forbidden_ids": [
+        "em_dashes",
+        "delve_syndrome",
+        "transition_addiction",
+        "metaphor_cliches",
+        "not_x_but_y",
+        "rhetorical_qa",
+        "rule_of_three",
+        "bullet_point_addiction"
+      ],
+      "min_severity": 4,
+      "expected_output": "No scripted severity 4-5 findings. Manual-review guidance may be returned, but should not be reported as applied unless evidence supports it."
+    }
+  ]
+}
+
