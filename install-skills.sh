@@ -190,6 +190,8 @@ AGENTS_COPY_SKILLS=(
 
 CLAUDE_COPY_SKILLS=(
   # --- Planning ---
+  "${SCRIPT_DIR}/skills/judgement-engineering-clc"                             "judgement-engineering-clc"
+  "${SCRIPT_DIR}/skills/looped-engineering-clc"                                "looped-engineering-clc"
   "${SCRIPT_DIR}/skills/plan-review-clc"                                        "plan-review-clc"
 
   # --- Literature / research ---
