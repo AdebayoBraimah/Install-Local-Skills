@@ -19,7 +19,7 @@ The script runs **nine always-on installation phases**:
 When `--local` is passed, **four additional phases** run:
 
 - **Local agent skills** — via `npx skills add`
-- **Local pip packages** — via `pip install`
+- **Local pip packages** — via `uv pip install` (falls back to the resolved interpreter's `pip`)
 - **Local copy skills** — copy + symlinks
 - **Local Claude-only copy skills** — copy to `~/.claude/skills/` only
 
@@ -31,18 +31,21 @@ When `--math` is passed, **one additional phase** runs:
 
 When `--eng` (or `--engineering`) is passed, **one additional phase** runs:
 
-- **Engineering + productivity skills** — via `npx skills add` (Matt Pocock's opinionated TDD/grill-me/triage/caveman/handoff/etc.)
+- **Engineering + productivity skills** — via `npx skills add` (Matt Pocock's opinionated TDD/grill-me/triage/handoff/etc.)
 
 `--eng` is independent of `--local`, `--math`, and `--repo-tools`; any combination may be passed.
 
-> **Note:** Phase 1 requires `npx`. Phases 2 and 8 require the `claude` CLI. Phases 3 and 9 require the `codex` CLI. The `--local` pip phase requires `pip`. The `--math` phase requires Lean 4 + Lake on PATH for runtime verification (not auto-installed). Missing CLIs cause the corresponding phases to be skipped. codex and gemini are universal agents and are already handled by `skills.sh` — no extra steps needed.
+> **Note:** Phase 1 requires `npx`. Phases 2 and 8 require the `claude` CLI. Phases 3 and 9 require the `codex` CLI. The `--local` pip phase requires `uv` or `pip`. The `--math` phase requires Lean 4 + Lake on PATH for runtime verification (not auto-installed). Missing CLIs cause the corresponding phases to be skipped. codex and gemini are universal agents and are already handled by `skills.sh` — no extra steps needed.
+
+> **Python installs use `uv` by default.** Before Phase 1 the script ensures `uv` is available — bootstrapping it via `pip install --user uv` (with a PEP 668 `--break-system-packages` retry) when missing — and routes every pip install through a helper that prefers `uv pip install` and falls back to the target interpreter's `pip`. It also installs [SkillSpector](https://github.com/NVIDIA/skillspector) via `uv tool install` first, then scans the installed skills after all phases complete (detection-after-fetch, so remote `npx`-fetched skills are inspected too). Both the `uv` bootstrap and the SkillSpector scan are best-effort and non-fatal.
 
 ## Prerequisites
 
 - [Node.js](https://nodejs.org/) (provides `npx`)
 - [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) (optional — required for Claude MCP servers and plugin installation)
 - [Codex CLI](https://developers.openai.com/codex/cli/) (optional — required for Codex MCP server and plugin installation)
-- [Python pip](https://pip.pypa.io/) (optional — required for `--local` pip package installation)
+- [Python pip](https://pip.pypa.io/) (optional — required for `--local` pip package installation; also used to bootstrap `uv` if it is missing)
+- [uv](https://docs.astral.sh/uv/) (optional — the default Python installer; auto-bootstrapped via `pip` if not already on PATH)
 - [draw.io Desktop](https://github.com/jgraph/drawio-desktop) (optional — required for the `drawio` local skill)
 - [Lean 4 + Lake (via elan)](https://leanprover.github.io/) (optional — required only for `--math`; see [Installing Lean 4 + Lake](#installing-lean-4--lake) below. Mathlib is required for the `mathematician-ai-ml` skill's full feature set.)
 - Python ≥3.10 on PATH (conda envs OK; `which python` is consulted first) — required for `--repo-tools`.
@@ -62,7 +65,7 @@ This repo vendors two skills as git submodules under `submodules/`:
 
 | Submodule | Skill | Why vendored |
 |---|---|---|
-| `submodules/get-shit-done-skills` | `gsd` | Patched fork of `ctsstc/get-shit-done-skills` — fixes a secret-leak in `agents/codebase-mapper/SKILL.md` |
+| `submodules/get-shit-done-skills` | `gsd` *(no longer installed)* | Patched fork of `ctsstc/get-shit-done-skills`. `gsd` has been retired from this installer (its only consumer, the `orchestrate` skill, was removed); the checkout is left on disk but nothing installs from it. |
 | `submodules/claude-deep-research-skill` | `deep-research-academic` | Pinned to a known commit for reproducible installs of `AdebayoBraimah/claude-deep-research-skill` |
 
 Clone with submodules so both skills install correctly:
@@ -91,7 +94,7 @@ git add submodules/claude-deep-research-skill
 git commit -m "MNT: Bumped claude-deep-research-skill submodule"
 ```
 
-If a submodule is left uninitialized, `install-skills.sh` skips the corresponding skill. For `gsd`, the script additionally **removes any previously installed upstream `gsd`** so users do not keep running the leaky version. For `deep-research-academic`, any prior install is left untouched.
+If a submodule is left uninitialized, `install-skills.sh` skips the corresponding skill. `gsd` is **no longer installed** by the script; on every run it unconditionally **removes any stale `gsd` install** (including the leaky upstream version) from `~/.agents/skills/`, `~/.claude/skills/`, and `~/.gemini/antigravity/skills/`. For `deep-research-academic`, any prior install is left untouched.
 
 ## Usage
 
@@ -206,7 +209,82 @@ If any skills, MCP servers, npm packages, or plugins fail, the summary lists the
 | Documentation | `context7` | intellectronica/agent-skills |
 | Writing | `humanizer` | davila7/claude-code-templates |
 | CLI | `cli-anything` | hkuds/cli-anything |
-| Project management | `gsd` | submodules/get-shit-done-skills (patched fork of ctsstc/get-shit-done-skills) |
+| Code quality | `ponytail` | dietrichgebert/ponytail |
+
+## MCP Servers
+
+MCP servers are registered from the shared `MCP_SERVERS` registry for both Claude (`claude mcp add`, phase 2) and Codex (`codex mcp add`, phase 3). Each entry is a `<name> <scope> <command...>` triplet; Codex ignores the scope.
+
+| Server | Scope | Command | Description |
+|---|---|---|---|
+| `codebase-memory-mcp` | `user` | `npx -y codebase-memory-mcp` | Local code-intelligence engine that builds a persistent knowledge graph of your codebase ([DeusData/codebase-memory-mcp](https://github.com/DeusData/codebase-memory-mcp)). 14 MCP tools, 158 languages, no API key. |
+
+> **Note:** `claude mcp add` / `codex mcp add` register the launch command without validating it, so the first cold start (`npx` fetch of the package) happens on first use inside the agent.
+
+### codebase-memory-mcp
+
+[codebase-memory-mcp](https://github.com/DeusData/codebase-memory-mcp) is a code-intelligence MCP server that AST-parses your repository (via tree-sitter across 158 languages) into a persistent knowledge graph of functions, classes, call chains, HTTP routes, and cross-service links. It answers structural questions about a codebase in a single graph query instead of dozens of grep/read cycles — its own benchmarks report ~10× fewer tokens and ~2× fewer tool calls versus file-by-file exploration.
+
+Everything runs **100% locally** — no API key, no Docker, no network. The graph persists to `~/.cache/codebase-memory-mcp/`, so it survives across sessions.
+
+**What this installer does:** registers the npm-distributed server (`npx -y codebase-memory-mcp`) as a `user`-scoped MCP server for Claude Code and Codex. This is all you need to use the tools from your agent. (The project *also* ships a standalone static binary with its own `install` command that auto-configures 11 agents and adds an optional 3D graph UI / auto-index hooks — see "Optional: standalone binary" below. The two approaches are interchangeable; this script uses the lighter `npx` path.)
+
+#### Usage
+
+1. **Verify registration** after running `./install-skills.sh`:
+
+   ```bash
+   claude mcp list | grep codebase-memory-mcp     # Claude Code (user scope)
+   codex  mcp list | grep codebase-memory-mcp     # Codex
+   ```
+
+2. **Index a project.** Open the repo in your agent and ask it, in natural language:
+
+   > "Index this project."
+
+   The agent calls the server's `index_repository` tool. First-time indexing of an average repo takes milliseconds to seconds; the graph is cached under `~/.cache/codebase-memory-mcp/` and a background watcher keeps it in sync on subsequent edits.
+
+3. **Query the graph** by asking the agent normal questions — it picks the right one of the 14 tools:
+
+   > - "What's the overall architecture of this service?" → `get_architecture`
+   > - "What breaks if I change `parse_config`?" → impact / call-graph tools
+   > - "Find dead code." → dead-code detection
+   > - "Where is the `/users/:id` route handled, and what does it call?" → route + call tools
+   > - "Show functions matching `.*Handler.*`." → `search_graph`
+   > - Ad-hoc graph query: `MATCH (f:Function)-[:CALLS]->(g) WHERE f.name = 'main' RETURN g.name` → `cypher`
+
+#### Use cases
+
+- **Onboarding / code exploration** — get an architecture overview (languages, packages, entry points, routes, hotspots, layers) in one call.
+- **Change-impact analysis** — `detect_changes` maps uncommitted git changes to affected symbols with risk classification before you refactor.
+- **Call-graph & dependency tracing** — import-aware, type-inferred call resolution across files and packages.
+- **Dead-code detection** — functions with zero callers (entry points excluded).
+- **Semantic + structural + full-text search** — vector search (bundled embeddings, no Ollama), regex/label/degree structural filters, and BM25 FTS.
+- **Cross-service linking** — HTTP/gRPC/GraphQL/tRPC route ↔ call-site matching and pub/sub channel detection.
+- **Architecture Decision Records** — `manage_adr` persists decisions across sessions.
+
+#### Instructions & configuration
+
+- **No API key or extra setup** is required beyond the MCP registration this script performs.
+- **CLI mode** (outside an agent) for quick checks:
+
+  ```bash
+  codebase-memory-mcp cli search_graph '{"name_pattern": ".*Handler.*"}'
+  ```
+
+- **Optional environment variables** (set in your shell or the agent's MCP env): `CBM_CACHE_DIR` (override the `~/.cache/codebase-memory-mcp/` graph location) and `CBM_LOG_LEVEL` (e.g. `debug`).
+- **Auto-index on session start** (indexes new projects automatically): `codebase-memory-mcp config set auto_index true` (limit via `config set auto_index_limit 50000`).
+- **Team-shared graph** — committing `.codebase-memory/graph.db.zst` (a zstd snapshot of the graph) lets teammates skip the first full reindex; add `.codebase-memory/` to `.gitignore` if you'd rather everyone reindex locally.
+- **Optional: standalone binary** — if you prefer the native binary (faster cold start, optional 3D UI at `localhost:9749`, auto-detected config for more agents), install it directly and let it configure agents instead of the `npx` registration:
+
+  ```bash
+  curl -fsSL https://raw.githubusercontent.com/DeusData/codebase-memory-mcp/main/install.sh | bash
+  # then restart your agent; "Index this project" to begin
+  ```
+
+  Keep it current with `codebase-memory-mcp update`; remove its agent configs with `codebase-memory-mcp uninstall`.
+
+> **Source of truth:** tool names and flags above reflect the upstream README ([DeusData/codebase-memory-mcp](https://github.com/DeusData/codebase-memory-mcp)) at the time of writing; check the repo for the current tool list, as the server is updated frequently.
 
 ## Claude Code Plugins
 
@@ -258,7 +336,9 @@ Copied into `~/.agents/skills/` only. No symlinks are created — these are avai
 | Category | Skill | Source | Description |
 |---|---|---|---|
 | Planning | `plan-review-cdx` | `skills/plan-review-cdx/` | Two-reviewer QA loop for Codex (spec + execution reviewers) |
-| Planning | `orchestrator-cdx` | `skills/orchestrator-cdx/` | Codex phase pipeline over GSD with plan review, execution, verification, and post-execution review gates |
+| Literature / research | `lit-review-cdx` | `skills/lit-review-cdx/` | Codex literature review skill |
+| Literature / research | `lit-summarizer-cdx` | `skills/lit-summarizer-cdx/` | Codex literature summarization skill |
+| Literature / research | `lit-survey-cdx` | `skills/lit-survey-cdx/` | Codex literature survey skill |
 
 ### Claude-Only Skills
 
@@ -266,8 +346,10 @@ Copied directly into `~/.claude/skills/` only. These are exclusive to Claude Cod
 
 | Category | Skill | Source | Description |
 |---|---|---|---|
-| Planning | `plan-review` | `skills/plan-review/` | Two-reviewer QA loop with default Claude+Codex pairing and a `claude-only` fallback (auto-engaged when Codex is unavailable, e.g. on HPC SLURM nodes) |
-| Orchestration | `orchestrate` | `skills/orchestrate/` | Thin policy layer over GSD driving a phase end-to-end (plan → execute → verify → review) with a Claude-only plan-review gate, parallel post-execution `deep-review` + `security-review` dispatch, ntfy notification, and a handoff document on terminal state. Counterpart to `orchestrator-cdx` (agents-only). |
+| Planning | `plan-review-clc` | `skills/plan-review-clc/` | Two-reviewer QA loop with default Claude+Codex pairing and a `claude-only` fallback (auto-engaged when Codex is unavailable, e.g. on HPC SLURM nodes) |
+| Literature / research | `lit-review-clc` | `skills/lit-review-clc/` | Claude literature review skill |
+| Literature / research | `lit-summarizer-clc` | `skills/lit-summarizer-clc/` | Claude literature summarization skill |
+| Literature / research | `lit-survey-clc` | `skills/lit-survey-clc/` | Claude literature survey skill |
 
 ### Shared Skills
 
@@ -277,8 +359,11 @@ Copied into `~/.agents/skills/` AND symlinked into `~/.claude/skills/`. Gemini C
 |---|---|---|---|
 | Visualization | `data-viz` | `skills/data-viz/` | Customized variant of upstream `data-visualization` extended for ML, statistical, high-dimensional, scalable, and publication workflows. Both skills are installed; trigger by name. |
 | Research engineering | `research-engineer-ai-ml` | `skills/research-engineer-ai-ml/` | AI/ML research engineering: reproducible experiments, baselines/ablations, PyTorch/JAX implementation plans |
-
-> **Note:** `gsd` is conditionally appended to the shared copy-skills set from the patched submodule at `submodules/get-shit-done-skills/.kilocode/skills/gsd`. See [Cloning with Submodules](#cloning-with-submodules) — if the submodule is not initialized, the install script skips `gsd` and removes any stale upstream-installed copy.
+| Writing / AI detection | `pangram` | `skills/pangram/` | AI-text detection via the Pangram API |
+| Writing review | `ai-anti-pattern-review` | `skills/ai-anti-pattern-review/` | Flags AI-writing anti-patterns in text (with evals + fixtures) |
+| Obsidian / RAG | `obsidian-graphrag-index` | `skills/obsidian-graphrag-index/` | Scaffolds and indexes a GraphRAG pipeline over an Obsidian vault |
+| Obsidian / RAG | `obsidian-llamaindex-vector-indexing` | `skills/obsidian-llamaindex-vector-indexing/` | Scaffolds and maintains a LlamaIndex vector index over an Obsidian vault |
+| Notifications | `alert-me` | `skills/alert-me/` | Sends an ntfy push to topic `ab-mac` on task finish/stop (thin wrapper over `ntfy-notify`) |
 
 > **Note:** `deep-research-academic` is conditionally appended to the shared copy-skills set from the submodule at `submodules/claude-deep-research-skill`. See [Cloning with Submodules](#cloning-with-submodules) — if the submodule is not initialized, the install script skips it and leaves any prior install untouched.
 
@@ -387,7 +472,7 @@ These are Matt Pocock's opinionated workflow skills from [`mattpocock/skills`](h
 
 | Category | Skill | Source | Description |
 |---|---|---|---|
-| Engineering discipline | `setup-matt-pocock-skills` | [mattpocock/skills](https://github.com/mattpocock/skills) | **Per-project bootstrap** — provisions the `## Agent skills` block in `AGENTS.md`/`CLAUDE.md` and the `docs/agents/` layout that the other 12 rely on. Run once per project before first use. |
+| Engineering discipline | `setup-matt-pocock-skills` | [mattpocock/skills](https://github.com/mattpocock/skills) | **Per-project bootstrap** — provisions the `## Agent skills` block in `AGENTS.md`/`CLAUDE.md` and the `docs/agents/` layout that the other 11 rely on. Run once per project before first use. |
 | Engineering discipline | `tdd` | [mattpocock/skills](https://github.com/mattpocock/skills) | Red-green-refactor loop discipline |
 | Engineering discipline | `diagnose` | [mattpocock/skills](https://github.com/mattpocock/skills) | Structured debugging for bugs and performance regressions |
 | Engineering discipline | `grill-me` | [mattpocock/skills](https://github.com/mattpocock/skills) | Adversarial questioning to drive alignment before coding |
@@ -397,17 +482,16 @@ These are Matt Pocock's opinionated workflow skills from [`mattpocock/skills`](h
 | Engineering discipline | `zoom-out` | [mattpocock/skills](https://github.com/mattpocock/skills) | Adds system-wide context to a code section |
 | Engineering discipline | `to-prd` | [mattpocock/skills](https://github.com/mattpocock/skills) | Converts conversations into PRDs (GitHub-issue creation is now handled by to-issues) |
 | Engineering discipline | `to-issues` | [mattpocock/skills](https://github.com/mattpocock/skills) | Converts a PRD into GitHub issues (companion to `to-prd`, completes the PRD → issues pipeline) |
-| Productivity | `caveman` | [mattpocock/skills](https://github.com/mattpocock/skills) | Ultra-compressed comms mode (~75 % token reduction while preserving technical accuracy) |
 | Productivity | `handoff` | [mattpocock/skills](https://github.com/mattpocock/skills) | Compact current conversation into a handoff document for another agent |
 | Productivity | `write-a-skill` | [mattpocock/skills](https://github.com/mattpocock/skills) | Scaffold a new skill with proper structure and progressive disclosure |
 
-> **Cross-folder bundle (`mattpocock/skills`):** `grill-me`, `caveman`, `handoff`, and `write-a-skill` live under upstream `productivity/`; the remaining nine are from `engineering/`. They are grouped here for workflow coherence — the bundle is intentionally cross-folder.
+> **Cross-folder bundle (`mattpocock/skills`):** `grill-me`, `handoff`, and `write-a-skill` live under upstream `productivity/`; the remaining nine are from `engineering/`. They are grouped here for workflow coherence — the bundle is intentionally cross-folder.
 
-> **Bootstrap reminder:** After installation, run `setup-matt-pocock-skills` **once per project** before first use of the other 12 (the bootstrap itself doesn't depend on itself). It writes the `AGENTS.md`/`CLAUDE.md` agent-skills block and `docs/agents/` layout the rest depend on; 11 of the 12 will silently degrade without it.
+> **Bootstrap reminder:** After installation, run `setup-matt-pocock-skills` **once per project** before first use of the other 11 (the bootstrap itself doesn't depend on itself). It writes the `AGENTS.md`/`CLAUDE.md` agent-skills block and `docs/agents/` layout the rest depend on; 10 of the 11 will silently degrade without it.
 
 > **Now included (policy reversal):** `to-issues` was previously excluded "to keep the bundle scoped to discipline rather than issue tracking." That rationale has been reversed — the PRD → GitHub-issues handoff is now considered part of the discipline bundle, completing the `grill-me → to-prd → to-issues → triage` planning pipeline. Bundled with `--eng`.
 
-> **Choosing when to invoke:** See [docs/mattpocock-skills-guide.md](docs/mattpocock-skills-guide.md) for per-skill triggers and how the 13 compose into one workflow.
+> **Choosing when to invoke:** See [docs/mattpocock-skills-guide.md](docs/mattpocock-skills-guide.md) for per-skill triggers and how the 12 compose into one workflow.
 
 ## Repo Tools (`--repo-tools`)
 
@@ -497,7 +581,7 @@ Skills bundled in the `skills/` directory of this repo. These are copied into `~
 
 ### pip Dependencies (local)
 
-Local skills may require Python packages. These are installed automatically via `pip install` when `--local` is used.
+Local skills may require Python packages. These are installed automatically when `--local` is used — via `uv pip install` against the resolved interpreter, falling back to that interpreter's `pip` (with a PEP 668 `--break-system-packages` retry) when `uv` is unavailable or refuses a non-venv target.
 
 | Package | Required by |
 |---|---|
@@ -570,7 +654,7 @@ There are five copy skill arrays, each targeting a different destination and gat
 
 > **Repo as source of truth:** Each install run overwrites the matching `~/.agents/skills/<name>/` entries with the bundled copies in this repo. To promote a local edit back into the repo, copy from `~/.agents/skills/<name>/` into `skills/<name>/`, re-run the path-portability rewrite, and commit. Skills are overwritten only when their gating flag matches:
 >
-> - Always overwritten: `data-viz`, `research-engineer-ai-ml` (`COPY_SKILLS`); `plan-review-cdx`, `orchestrator-cdx` (`AGENTS_COPY_SKILLS`); `plan-review`, `orchestrate` (`CLAUDE_COPY_SKILLS`).
+> - Always overwritten: `data-viz`, `research-engineer-ai-ml`, `pangram`, `ai-anti-pattern-review`, `obsidian-graphrag-index`, `obsidian-llamaindex-vector-indexing`, `alert-me` (`COPY_SKILLS`); `plan-review-cdx`, `lit-*-cdx` (`AGENTS_COPY_SKILLS`); `plan-review-clc`, `lit-*-clc` (`CLAUDE_COPY_SKILLS`).
 > - Overwritten only with `--local`: `gimp`, `inkscape` (`LOCAL_COPY_SKILLS`).
 > - Overwritten only with `--math`: `mathematician`, `mathematician-ai-ml` (`MATH_COPY_SKILLS`).
 

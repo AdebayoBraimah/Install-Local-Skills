@@ -1,10 +1,10 @@
 # Engineering Skills Guide: Matt Pocock's `mattpocock/skills`
 
-The 13 skills installed by `./install-skills.sh --eng` are a curated subset of [`mattpocock/skills`](https://github.com/mattpocock/skills), Matt Pocock's "anti-failure toolkit" for coding agents. They target four recurring failure modes: **misalignment** (the agent builds the wrong thing), **verbosity** (rambling code or comments), **non-functional code** (passes locally, breaks elsewhere), and **architectural decay** (small additions that erode structure over time).
+The 12 skills installed by `./install-skills.sh --eng` are a curated subset of [`mattpocock/skills`](https://github.com/mattpocock/skills), Matt Pocock's "anti-failure toolkit" for coding agents. They target four recurring failure modes: **misalignment** (the agent builds the wrong thing), **verbosity** (rambling code or comments), **non-functional code** (passes locally, breaks elsewhere), and **architectural decay** (small additions that erode structure over time).
 
 ## Per-project bootstrap
 
-**Before first use in any new project, run `setup-matt-pocock-skills` once.** It provisions the `## Agent skills` block in `AGENTS.md`/`CLAUDE.md` and the `docs/agents/` layout that **11 of the other 12 skills depend on** for issue-tracker context, triage labels, and domain documentation. Without it, those 11 will silently degrade — they invoke against missing files rather than failing loudly. This is a per-project step, not a per-skill step: once per repo and you are done.
+**Before first use in any new project, run `setup-matt-pocock-skills` once.** It provisions the `## Agent skills` block in `AGENTS.md`/`CLAUDE.md` and the `docs/agents/` layout that **10 of the other 11 skills depend on** for issue-tracker context, triage labels, and domain documentation. Without it, those 10 will silently degrade — they invoke against missing files rather than failing loudly. This is a per-project step, not a per-skill step: once per repo and you are done.
 
 ## TL;DR
 
@@ -12,7 +12,7 @@ The 13 skills installed by `./install-skills.sh --eng` are a curated subset of [
 - **Non-functional code** → `tdd` during implementation; `diagnose` on regressions.
 - **Architectural decay** → `improve-codebase-architecture` for refactors; `zoom-out` before edits to unfamiliar code; `triage` for issue state.
 
-## The 13 skills
+## The 12 skills
 
 ### `setup-matt-pocock-skills`
 
@@ -53,10 +53,6 @@ Converts a conversation into a Product Requirements Document. Targets **misalign
 ### `to-issues`
 
 Converts the PRD produced by `to-prd` into a set of GitHub issues. Targets **misalignment** at the PRD-to-execution boundary. Invoke after `to-prd` when the plan is ready to be tracked as discrete tickets.
-
-### `caveman`
-
-Ultra-compressed communication mode. Cuts agent token usage by ~75 % by dropping filler while preserving technical accuracy. Invoke when context budget is tight or when an agent is about to produce a long-running summary.
 
 ### `handoff`
 
