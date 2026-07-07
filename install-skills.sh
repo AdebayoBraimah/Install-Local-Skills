@@ -194,6 +194,9 @@ CLAUDE_COPY_SKILLS=(
   "${SCRIPT_DIR}/skills/looped-engineering-clc"                                "looped-engineering-clc"
   "${SCRIPT_DIR}/skills/plan-review-clc"                                        "plan-review-clc"
 
+  # --- Code review ---
+  "${SCRIPT_DIR}/skills/gr-review-clc"                                          "gr-review-clc"
+
   # --- Literature / research ---
   "${SCRIPT_DIR}/skills/lit-review-clc"                                         "lit-review-clc"
   "${SCRIPT_DIR}/skills/lit-summarizer-clc"                                     "lit-summarizer-clc"
