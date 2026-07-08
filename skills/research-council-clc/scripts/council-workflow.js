@@ -6,6 +6,7 @@ export const meta = {
     { title: 'Review', detail: 'persona reviewers fan out in parallel' },
     { title: 'Verify', detail: 'adversarial refutation of CRITICAL/MAJOR findings (full tier only)' },
     { title: 'Synthesize', detail: 'chair merges all reviews into one prioritized report' },
+    { title: 'Cleanup', detail: 'reclaim disk left by code execution (worktrees, venvs, clones)' },
   ],
 }
 
@@ -89,10 +90,15 @@ log(`Council convened: ${roster.map(r => r.key).join(', ')}`)
 
 // Barrier justified: the verification round dedupes across ALL reviewers'
 // findings, and the Chair needs every review at once.
-const reviews = (await parallel(roster.map(r => () =>
-  agent(reviewerPrompt(r.role, r.file), { label: `review:${r.key}`, phase: 'Review', schema: REVIEW_SCHEMA })
+// The Reproducibility Engineer executes code (clones repos, builds venvs), so it
+// runs in a fresh, disposable git worktree — its filesystem mutations are
+// contained there and swept in the Cleanup phase, never in the shared tree.
+const reviews = (await parallel(roster.map(r => () => {
+  const opts = { label: `review:${r.key}`, phase: 'Review', schema: REVIEW_SCHEMA }
+  if (r.key === 'repro') opts.isolation = 'worktree'
+  return agent(reviewerPrompt(r.role, r.file), opts)
     .then(res => (res ? { ...res, reviewer: r.key } : null))
-))).filter(Boolean)
+}))).filter(Boolean)
 
 const missing = roster.map(r => r.key).filter(k => !reviews.some(r => r.reviewer === k))
 if (missing.length) log(`Reviewers failed/skipped: ${missing.join(', ')}`)
@@ -121,7 +127,7 @@ if (A.verify) {
     log(`Verifying ${unique.length} CRITICAL/MAJOR findings adversarially`)
     verified = (await parallel(unique.map((f, i) => () =>
       agent(
-        `You are an adversarial verifier on an academic review council. Your job is to REFUTE the finding below — assume it is wrong until its evidence forces you to concede. Read the intake brief at ${A.briefPath} and the artifact sources it lists, then check the finding against the actual artifact, running searches or code as needed. If the finding misreads the artifact, cites nothing real, or the claimed failure cannot occur, it does not stand.\n\nFinding (from ${f.reviewer}):\nSeverity: ${f.severity}\nTitle: ${f.title}\nBody: ${f.body}\nEvidence: ${f.evidence || 'none given'}\nProposed fix: ${f.fix}`,
+        `You are an adversarial verifier on an academic review council. Your job is to REFUTE the finding below — assume it is wrong until its evidence forces you to concede. Read the intake brief at ${A.briefPath} and the artifact sources it lists, then check the finding against the actual artifact, running searches or code as needed. If the finding misreads the artifact, cites nothing real, or the claimed failure cannot occur, it does not stand. If you write scripts to check it, keep them tiny and under the scratchpad, and delete any heavy env artifacts (venvs, clones, caches) before returning.\n\nFinding (from ${f.reviewer}):\nSeverity: ${f.severity}\nTitle: ${f.title}\nBody: ${f.body}\nEvidence: ${f.evidence || 'none given'}\nProposed fix: ${f.fix}`,
         { label: `verify:${f.reviewer}:${i}`, phase: 'Verify', schema: VERDICT_SCHEMA }
       ).then(v => (v ? { ...f, verdict: v } : null))
     ))).filter(Boolean)
@@ -136,4 +142,25 @@ const report = await agent(
   { label: 'chair', phase: 'Synthesize', effort: 'high' }
 )
 
-return { reviews, verified, report }
+// Cleanup: reclaim disk left by code execution. Only worth a janitor agent when
+// something actually ran code — the repro seat, or the verification round (whose
+// verifiers may write/run counterexample scripts). The repro seat's worktree is
+// auto-reclaimed by the harness once emptied; the janitor prunes stale worktree
+// entries and removes heavy throwaway env artifacts, while preserving the intake
+// brief and the small evidence scripts the report cites.
+let cleanup = null
+const ranCode = roster.some(r => r.key === 'repro') || A.verify
+if (ranCode) {
+  phase('Cleanup')
+  const briefDir = A.briefPath.replace(/\/[^/]*$/, '')
+  cleanup = await agent(
+    `You are the cleanup janitor for a research-council run. Reviewers may have executed code — the Reproducibility Engineer runs in a disposable git worktree and can create Python venvs, clone external repositories, and download caches; verification agents may have written small scripts under the council scratchpad directory ${briefDir}. Reclaim the heavy, throwaway disk now, carefully:\n` +
+    `1. Run \`git worktree prune -v\` in the repository to drop stale worktree admin entries, then \`git worktree list\` and report any worktrees that remain (if a repro worktree lingers with leftover files, \`git worktree remove --force\` it — but never remove the main working tree or a worktree that holds the user's own uncommitted work).\n` +
+    `2. Under ${briefDir}, the system temp dir, and any repro worktree, find and \`rm -rf\` throwaway environment artifacts created by this run: \`venv\`/\`.venv\`/conda env directories, pip/hf/torch caches, and cloned external repositories that are not the user's own work.\n` +
+    `DO NOT delete: the intake brief, any small evidence or counterexample scripts the reviewers wrote (the report cites them by path), the report itself, or anything belonging to the user. When unsure whether something is the user's, leave it and say so explicitly.\n` +
+    `Report precisely what you removed (with reclaimed sizes if easy) and what you deliberately kept. Your final message is that plain-text report.`,
+    { label: 'cleanup', phase: 'Cleanup' }
+  )
+}
+
+return { reviews, verified, report, cleanup }

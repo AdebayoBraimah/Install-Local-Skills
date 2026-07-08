@@ -136,21 +136,29 @@ Call the **Workflow** tool with:
 - Set `"verify": true` **only** for the full tier.
 
 The workflow fans the roster out in parallel, optionally runs an adversarial
-verification round on CRITICAL/MAJOR findings (full tier), and finishes with the
-Chair. Everything a reviewer needs beyond its persona and role must live in the
-**intake brief** (Step 2), since that path is all the prompt carries.
+verification round on CRITICAL/MAJOR findings (full tier), finishes with the
+Chair, and then runs a **Cleanup** phase. Everything a reviewer needs beyond its
+persona and role must live in the **intake brief** (Step 2), since that path is
+all the prompt carries.
 
 Notes:
-- The Reproducibility Engineer **executes code** when a repo is given (isolated
-  env under the scratchpad). Warn the user that permission prompts may appear
-  mid-run depending on their permission mode.
+- The Reproducibility Engineer **executes code** when a repo is given. It runs
+  in a **fresh, disposable git worktree** (`isolation: "worktree"`) so its
+  clones/venvs never touch the shared tree, self-cleans its heavy artifacts
+  before returning, and a final janitor sweeps anything left. Warn the user that
+  permission prompts may appear mid-run depending on their permission mode.
+- The **Cleanup** phase runs whenever the roster includes `repro` or `verify`
+  is on: it prunes stale git worktrees and `rm -rf`s throwaway env artifacts
+  (venvs, external clones, caches) while preserving the intake brief, the small
+  evidence scripts the report cites, and anything belonging to the user.
 - If a reviewer returns `null` (skipped/failed), continue; the Chair must note
   the missing perspective in the report.
 
 ## Step 4 — Deliver the report
 
-The workflow returns `{ reviews, verified, report }` where `report` is the
-Chair's consolidated markdown.
+The workflow returns `{ reviews, verified, report, cleanup }` where `report` is
+the Chair's consolidated markdown and `cleanup` is the janitor's plain-text
+summary of what disk was reclaimed (or `null` when no code-running seat ran).
 
 1. Write it to `council-review-<slug>.md` in the current working directory,
    where `<slug>` is a short kebab-case name derived from the artifact
