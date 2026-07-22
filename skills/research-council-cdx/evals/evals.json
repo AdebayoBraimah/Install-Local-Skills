@@ -1,0 +1,46 @@
+{
+  "skill_name": "research-council-cdx",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Use research-council-cdx to review this idea: train a language model to generate synthetic peer reviews, then fine-tune the same model on those reviews to improve its scientific reasoning.",
+      "expected_output": "Automatically selects quick tier, runs only the three required independent reviewer seats before Chair synthesis, marks findings unverified, and produces the unchanged report format plus collision-safe report path.",
+      "expectations": [
+        "Automatically selects the quick tier because the artifact is an idea with no document, repository, or formal proof.",
+        "Announces the selected tier and independently launches Prior Art Scout, Reviewer #2, and Methodologist seats before Chair synthesis.",
+        "Does not launch Devil's Advocate, Theory Checker, Reproducibility Engineer, or full-tier verification.",
+        "Marks quick-tier findings as unverified and produces the unchanged Chair report sections: Verdict, Top findings, Revision plan, Per-reviewer summaries, References, and Appendix: refuted or demoted findings.",
+        "Returns the aggregate verdict, three to five highest-priority findings, and a collision-safe council-review-<slug>.md report path."
+      ],
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "Run a full research-council-cdx review of this repository and its formal convergence proof in docs/convergence-proof.tex. Audit whether the implementation matches the theorem assumptions, and independently verify every CRITICAL and MAJOR council finding before the Chair decides the verdict.",
+      "expected_output": "Honors full tier, runs the complete independent roster, safely audits code and proof, independently verifies serious findings, and preserves the Chair report and cleanup contracts.",
+      "expectations": [
+        "Honors the explicit full tier and uses all six independent reviewer seats plus a fresh neutral Chair.",
+        "Includes the absolute repository and proof paths, central claims, field, selected tier, roster, and reproducibility isolation constraints in the intake brief.",
+        "Requires the Reproducibility Engineer to use a disposable isolated worktree or prominently fall back to static audit without modifying the user's checkout.",
+        "Assigns stable IDs to deduplicated CRITICAL and MAJOR findings and launches independent verifier agents that assume each finding is wrong until supported by direct evidence.",
+        "Applies valid verifier verdicts exactly, retains failed verification as unverified, and gives the Chair complete reviewer results paired with verification outcomes.",
+        "Produces the unchanged Chair report format and discloses any execution or verification limitation in both the report and concise chat handoff."
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Run a standard research-council-cdx review of my empirical experiment plan. During collection, the Methodologist review file is invalid JSON; its one correction attempt also fails, while the other selected reviewers succeed. Complete the council without inventing the missing review.",
+      "expected_output": "Uses the standard empirical roster, makes one correction attempt for invalid output, records the missing Methodologist, continues with reduced confidence, and never fabricates the missing review.",
+      "expectations": [
+        "Uses the standard empirical roster: Prior Art Scout, Reviewer #2, Methodologist, Devil's Advocate, Reproducibility Engineer, and Chair.",
+        "Uses followup_task exactly once to give the Methodologist the concrete JSON validation error and request correction at the same output path.",
+        "Records Methodologist as failed in missing-seats.json and chair/input.json after the correction attempt fails, without asking another persona to replace it.",
+        "Continues because at least one independent review succeeded, skips full-tier verification, and marks surviving findings as unverified.",
+        "Requires the Chair and final chat handoff to disclose the missing Methodologist perspective and reduced confidence while preserving the exact report section structure.",
+        "Cleans up only council-owned scratch state and does not fabricate Methodologist findings or an aggregate result outside the Chair synthesis."
+      ],
+      "files": []
+    }
+  ]
+}

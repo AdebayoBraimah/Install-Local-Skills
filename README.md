@@ -131,6 +131,22 @@ chmod +x install-skills.sh
 ./install-skills.sh --help
 ```
 
+The normal `./install-skills.sh` command installs `research-council-cdx` into
+`~/.agents/skills/research-council-cdx/`; `--local` is not required. Invoke it
+from a Codex session with subagents enabled, choosing the review depth explicitly
+when needed:
+
+```text
+research-council-cdx quick "Review this research idea: ..."
+research-council-cdx standard path/to/draft.md
+research-council-cdx full path/to/repository
+```
+
+`research-council-cdx` is the Codex-native council: it uses Codex subagents for
+independent reviewers, verification, and Chair synthesis. The separate
+`research-council-clc` skill remains the Claude Code version and uses Claude's
+Workflow orchestration.
+
 ## Getting Started Workflows
 
 Start with the workflow guide that matches the project state:
@@ -341,6 +357,7 @@ Copied into `~/.agents/skills/` only. No symlinks are created — these are avai
 | Literature / research | `lit-review-cdx` | `skills/lit-review-cdx/` | Codex literature review skill |
 | Literature / research | `lit-summarizer-cdx` | `skills/lit-summarizer-cdx/` | Codex literature summarization skill |
 | Literature / research | `lit-survey-cdx` | `skills/lit-survey-cdx/` | Codex literature survey skill |
+| Literature / research | `research-council-cdx` | `skills/research-council-cdx/` | Codex-native adversarial academic review council: independent subagent reviewers with Chair synthesis and tiered quick/standard/full review |
 
 ### Claude-Only Skills
 
@@ -659,7 +676,7 @@ There are five copy skill arrays, each targeting a different destination and gat
 
 > **Repo as source of truth:** Each install run overwrites the matching `~/.agents/skills/<name>/` entries with the bundled copies in this repo. To promote a local edit back into the repo, copy from `~/.agents/skills/<name>/` into `skills/<name>/`, re-run the path-portability rewrite, and commit. Skills are overwritten only when their gating flag matches:
 >
-> - Always overwritten: `data-viz`, `research-engineer-ai-ml`, `pangram`, `ai-anti-pattern-review`, `obsidian-graphrag-index`, `obsidian-llamaindex-vector-indexing`, `alert-me` (`COPY_SKILLS`); `judgement-engineering-cdx`, `looped-engineering-cdx`, `plan-review-cdx`, `lit-*-cdx` (`AGENTS_COPY_SKILLS`); `judgement-engineering-clc`, `looped-engineering-clc`, `plan-review-clc`, `lit-*-clc`, `research-council-clc` (`CLAUDE_COPY_SKILLS`).
+> - Always overwritten: `data-viz`, `research-engineer-ai-ml`, `pangram`, `ai-anti-pattern-review`, `obsidian-graphrag-index`, `obsidian-llamaindex-vector-indexing`, `alert-me` (`COPY_SKILLS`); `judgement-engineering-cdx`, `looped-engineering-cdx`, `plan-review-cdx`, `lit-*-cdx`, `research-council-cdx` (`AGENTS_COPY_SKILLS`); `judgement-engineering-clc`, `looped-engineering-clc`, `plan-review-clc`, `lit-*-clc`, `research-council-clc` (`CLAUDE_COPY_SKILLS`).
 > - Overwritten only with `--local`: `gimp`, `inkscape` (`LOCAL_COPY_SKILLS`).
 > - Overwritten only with `--math`: `mathematician`, `mathematician-ai-ml` (`MATH_COPY_SKILLS`).
 
