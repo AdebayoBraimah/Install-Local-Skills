@@ -172,7 +172,6 @@ AGENTS_COPY_SKILLS=(
   "${SCRIPT_DIR}/skills/lit-review-cdx"                                         "lit-review-cdx"
   "${SCRIPT_DIR}/skills/lit-summarizer-cdx"                                     "lit-summarizer-cdx"
   "${SCRIPT_DIR}/skills/lit-survey-cdx"                                         "lit-survey-cdx"
-  "${SCRIPT_DIR}/skills/research-council-cdx"                                    "research-council-cdx"
 )
 
 
