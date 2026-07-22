@@ -341,6 +341,7 @@ Copied into `~/.agents/skills/` only. No symlinks are created — these are avai
 | Literature / research | `lit-review-cdx` | `skills/lit-review-cdx/` | Codex literature review skill |
 | Literature / research | `lit-summarizer-cdx` | `skills/lit-summarizer-cdx/` | Codex literature summarization skill |
 | Literature / research | `lit-survey-cdx` | `skills/lit-survey-cdx/` | Codex literature survey skill |
+| Literature / research | `research-council-cdx` | `skills/research-council-cdx/` | Codex-native adversarial council using parallel subagents, verification, and Chair synthesis |
 
 ### Claude-Only Skills
 
@@ -659,7 +660,7 @@ There are five copy skill arrays, each targeting a different destination and gat
 
 > **Repo as source of truth:** Each install run overwrites the matching `~/.agents/skills/<name>/` entries with the bundled copies in this repo. To promote a local edit back into the repo, copy from `~/.agents/skills/<name>/` into `skills/<name>/`, re-run the path-portability rewrite, and commit. Skills are overwritten only when their gating flag matches:
 >
-> - Always overwritten: `data-viz`, `research-engineer-ai-ml`, `pangram`, `ai-anti-pattern-review`, `obsidian-graphrag-index`, `obsidian-llamaindex-vector-indexing`, `alert-me` (`COPY_SKILLS`); `judgement-engineering-cdx`, `looped-engineering-cdx`, `plan-review-cdx`, `lit-*-cdx` (`AGENTS_COPY_SKILLS`); `judgement-engineering-clc`, `looped-engineering-clc`, `plan-review-clc`, `lit-*-clc`, `research-council-clc` (`CLAUDE_COPY_SKILLS`).
+> - Always overwritten: `data-viz`, `research-engineer-ai-ml`, `pangram`, `ai-anti-pattern-review`, `obsidian-graphrag-index`, `obsidian-llamaindex-vector-indexing`, `alert-me` (`COPY_SKILLS`); `judgement-engineering-cdx`, `looped-engineering-cdx`, `plan-review-cdx`, `lit-*-cdx`, `research-council-cdx` (`AGENTS_COPY_SKILLS`); `judgement-engineering-clc`, `looped-engineering-clc`, `plan-review-clc`, `lit-*-clc`, `research-council-clc` (`CLAUDE_COPY_SKILLS`).
 > - Overwritten only with `--local`: `gimp`, `inkscape` (`LOCAL_COPY_SKILLS`).
 > - Overwritten only with `--math`: `mathematician`, `mathematician-ai-ml` (`MATH_COPY_SKILLS`).
 
