@@ -4,7 +4,7 @@
 # Installs agent skills via npx skills add (https://skills.sh/).
 #
 # Target agents: claude-code, antigravity
-# NOTE: codex and gemini are universal and already handled.
+# NOTE: codex and antigravity are universal and already handled.
 #
 # Python installs default to uv (the script bootstraps it via pip if absent);
 # py_install falls back to the target interpreter's pip for non-venv targets
@@ -211,6 +211,37 @@ CLAUDE_COPY_SKILLS=(
 
 # =========================================================================
 #
+# Anti-Gravity copy skills registry (installed when Anti-Gravity is present)
+#
+#   Each entry is a pair: <source-path> followed by <target-skill-name-agy>.
+#   These local skill directories are copied to ~/.agents/skills/<name-agy>/
+#   and adapted (YAML frontmatter name and Codex/Claude text references are
+#   updated to Anti-Gravity).
+#
+# =========================================================================
+
+ANTIGRAVITY_COPY_SKILLS=(
+  # --- Planning ---
+  "${SCRIPT_DIR}/skills/judgement-engineering-cdx"                             "judgement-engineering-agy"
+  "${SCRIPT_DIR}/skills/looped-engineering-cdx"                                "looped-engineering-agy"
+  "${SCRIPT_DIR}/skills/plan-review-cdx"                                        "plan-review-agy"
+
+  # --- Code review (gr-* code-intelligence suite) ---
+  "${SCRIPT_DIR}/skills/gr-review-clc"                                          "gr-review-agy"
+  "${SCRIPT_DIR}/skills/gr-ask-clc"                                             "gr-ask-agy"
+  "${SCRIPT_DIR}/skills/gr-learnings-clc"                                       "gr-learnings-agy"
+  "${SCRIPT_DIR}/skills/gr-verify-clc"                                          "gr-verify-agy"
+
+  # --- Literature / research ---
+  "${SCRIPT_DIR}/skills/lit-review-cdx"                                         "lit-review-agy"
+  "${SCRIPT_DIR}/skills/lit-summarizer-cdx"                                     "lit-summarizer-agy"
+  "${SCRIPT_DIR}/skills/lit-survey-cdx"                                         "lit-survey-agy"
+  "${SCRIPT_DIR}/skills/research-council-cdx"                                   "research-council-agy"
+)
+
+
+# =========================================================================
+#
 # Shared copy skills registry (always installed)
 #
 #   Each entry is a pair: <source-path> followed by <skill-name>.
@@ -218,10 +249,8 @@ CLAUDE_COPY_SKILLS=(
 #   ~/.agents/skills/<skill-name>/ AND symlinked into:
 #     - ~/.claude/skills/<skill-name>
 #
-#   Gemini CLI and Antigravity IDE discover skills from
-#   ~/.agents/skills/ directly. Prior ~/.gemini/antigravity/skills/
-#   symlinks (from earlier versions of this script) are cleaned up
-#   on the next install when they point at the canonical target.
+#   Anti-Gravity agents discover skills from
+#   ~/.agents/skills/ directly.
 #
 #   Always installed (no --local flag required).
 #
@@ -258,8 +287,7 @@ COPY_SKILLS=(
 # plain echo with inline ANSI yellow to stay independent of helper order.
 printf '\033[33m%s\033[0m\n' "Note: gsd is no longer installed by this script — removing any stale gsd installs."
 for stale in "${HOME}/.agents/skills/gsd" \
-             "${HOME}/.claude/skills/gsd" \
-             "${HOME}/.gemini/antigravity/skills/gsd"; do
+             "${HOME}/.claude/skills/gsd"; do
   if [[ -e "${stale}" || -L "${stale}" ]]; then
     printf '\033[33m%s\033[0m\n' "  Removing stale gsd install: ${stale}"
     rm -rf "${stale}"
@@ -360,10 +388,8 @@ LOCAL_PIP_PACKAGES=(
 #   ~/.agents/skills/<skill-name>/ AND symlinked into:
 #     - ~/.claude/skills/<skill-name>
 #
-#   Gemini CLI and Antigravity IDE discover skills from
-#   ~/.agents/skills/ directly. Prior ~/.gemini/antigravity/skills/
-#   symlinks (from earlier versions of this script) are cleaned up
-#   on the next install when they point at the canonical target.
+#   Anti-Gravity agents discover skills from
+#   ~/.agents/skills/ directly.
 #
 #   Only installed when the --local flag is passed.
 #
@@ -402,10 +428,8 @@ LOCAL_CLAUDE_COPY_SKILLS=(
 #   ~/.agents/skills/<skill-name>/ AND symlinked into:
 #     - ~/.claude/skills/<skill-name>
 #
-#   Gemini CLI and Antigravity IDE discover skills from
-#   ~/.agents/skills/ directly. Prior ~/.gemini/antigravity/skills/
-#   symlinks (from earlier versions of this script) are cleaned up
-#   on the next install when they point at the canonical target.
+#   Anti-Gravity agents discover skills from
+#   ~/.agents/skills/ directly.
 #
 #   Only installed when the --math flag is passed. The --math flag is
 #   independent of --local; either or both may be passed.
@@ -567,10 +591,10 @@ Usage(){
       from https://leanprover.github.io/ first.
 
       NOTE:
-      - codex and gemini are universal for the base skill
+      - codex and antigravity are universal for the base skill
         installation. With --repo-tools, the script also
-        performs explicit Gemini MCP registration and global
-        Graphify skill setup for Codex, Gemini, and Antigravity.
+        performs explicit MCP registration and global
+        Graphify skill setup for Codex and Antigravity.
       - If installing skills for the first time, use
         the interactive install process with:
 
@@ -1488,16 +1512,6 @@ install_local_copy_skill(){
 
   echo_green "  -> Copied to ${target_dir}"
 
-  # One-time cleanup: remove any antigravity symlink left from prior installs
-  # ONLY when it is a symlink pointing at the canonical target. Real files,
-  # directories, or symlinks pointing elsewhere are left untouched.
-  local stale_gemini="${HOME}/.gemini/antigravity/skills/${skill_name}"
-  local expected_target="../../../.agents/skills/${skill_name}"
-  if [[ -L "${stale_gemini}" && "$(readlink "${stale_gemini}")" == "${expected_target}" ]]; then
-    rm -f "${stale_gemini}"
-    echo_yellow "  -> Cleaned stale antigravity symlink: ${stale_gemini}"
-  fi
-
   # Create symlink in ~/.claude/skills/
   mkdir -p "${claude_dir}"
 
@@ -1609,6 +1623,80 @@ install_local_claude_copy_skill(){
   rm -rf "${target_dir}/.git"
 
   echo_green "  -> Copied to ${target_dir}"
+  echo_green "  -> ${skill_name} installed successfully"
+  echo
+}
+
+
+#######################################
+# Checks if Anti-Gravity is installed.
+#   Returns 0 if `agy` command exists or
+#   ~/.gemini/antigravity directory exists.
+#######################################
+is_antigravity_installed(){
+  if command -v agy &>/dev/null || [[ -d "${HOME}/.gemini/antigravity" ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+
+#######################################
+# Installs an Anti-Gravity skill by copying it
+#   into ~/.agents/skills/<skill_name>/ and
+#   adapting SKILL.md frontmatter name and text
+#   to Anti-Gravity.
+# Arguments:
+#   source_path: Absolute path to the local skill directory
+#   skill_name:  Skill target directory name (e.g. judgement-engineering-agy)
+# Globals:
+#   FAILED_ANTIGRAVITY_COPY_SKILLS (appended on failure)
+#######################################
+install_antigravity_copy_skill(){
+  local source_path="${1}"
+  local skill_name="${2}"
+  local agents_dir="${HOME}/.agents/skills"
+  local target_dir="${agents_dir}/${skill_name}"
+
+  echo_blue "Installing Anti-Gravity skill: ${skill_name}  (adapted from ${source_path})"
+
+  if [[ ! -d "${source_path}" ]]; then
+    echo_red "  -> Source directory not found: ${source_path}"
+    FAILED_ANTIGRAVITY_COPY_SKILLS+=("${skill_name}")
+    echo
+    return
+  fi
+
+  # Ensure ~/.agents/skills/ directory exists
+  mkdir -p "${agents_dir}"
+
+  if [[ -d "${target_dir}" ]]; then
+    echo_yellow "  -> Target exists, updating: ${target_dir}"
+    rm -rf "${target_dir}"
+  fi
+
+  if ! cp -R "${source_path}" "${target_dir}"; then
+    echo_red "  -> Failed to copy ${skill_name} to ${target_dir}"
+    FAILED_ANTIGRAVITY_COPY_SKILLS+=("${skill_name}")
+    echo
+    return
+  fi
+
+  # Strip any .git directory copied from submodule
+  rm -rf "${target_dir}/.git"
+
+  # Adapt SKILL.md for Anti-Gravity
+  if [[ -f "${target_dir}/SKILL.md" ]]; then
+    local tmp_file
+    tmp_file="$(mktemp)"
+    sed -e "s/^name: .*/name: ${skill_name}/" \
+        -e 's/Codex/Anti-Gravity/g' \
+        -e 's/Claude Code/Anti-Gravity/g' \
+        "${target_dir}/SKILL.md" > "${tmp_file}" && mv "${tmp_file}" "${target_dir}/SKILL.md"
+  fi
+
+  echo_green "  -> Adapted and copied to ${target_dir}"
   echo_green "  -> ${skill_name} installed successfully"
   echo
 }
@@ -1861,6 +1949,11 @@ main(){
     local skip_codex=true
   fi
 
+  if ! is_antigravity_installed; then
+    echo_yellow "Anti-Gravity not detected (neither 'agy' CLI nor ~/.gemini/antigravity found) — skipping Anti-Gravity specific skill installation."
+    local skip_antigravity_skills=true
+  fi
+
   #
   # uv bootstrap (default Python installer)
   #============================
@@ -2086,6 +2179,32 @@ main(){
       n=$(( n + 2 ))
 
       install_local_claude_copy_skill "${claude_copy_source}" "${claude_copy_skill}"
+    done
+  fi
+
+  #
+  # Install Anti-Gravity copy skills (adapted *-agy skills)
+  #============================
+
+  FAILED_ANTIGRAVITY_COPY_SKILLS=()
+
+  local total_antigravity_copy_skills=$(( ${#ANTIGRAVITY_COPY_SKILLS[@]} / 2 ))
+
+  if [[ "${skip_antigravity_skills}" != true && ${total_antigravity_copy_skills} -gt 0 ]]; then
+    echo
+    echo_blue "=========================================="
+    echo_blue " Installing ${total_antigravity_copy_skills} Anti-Gravity Skill(s)"
+    echo_blue " Target: ~/.agents/skills/"
+    echo_blue "=========================================="
+    echo
+
+    local agy_idx=0
+    while [[ ${agy_idx} -lt ${#ANTIGRAVITY_COPY_SKILLS[@]} ]]; do
+      local agy_source="${ANTIGRAVITY_COPY_SKILLS[${agy_idx}]}"
+      local agy_skill="${ANTIGRAVITY_COPY_SKILLS[$(( agy_idx + 1 ))]}"
+      agy_idx=$(( agy_idx + 2 ))
+
+      install_antigravity_copy_skill "${agy_source}" "${agy_skill}"
     done
   fi
 
@@ -2529,6 +2648,17 @@ main(){
   local all_claude_copy_skills=${total_claude_copy_skills}
   [[ "${install_local}" == true ]] && all_claude_copy_skills=$(( all_claude_copy_skills + total_local_claude_copy_skills ))
 
+  if [[ "${skip_antigravity_skills}" != true && ${total_antigravity_copy_skills} -gt 0 ]]; then
+    if [[ ${#FAILED_ANTIGRAVITY_COPY_SKILLS[@]} -eq 0 ]]; then
+      echo_green " All ${total_antigravity_copy_skills} Anti-Gravity skill(s) installed successfully!"
+    else
+      echo_yellow " ${#FAILED_ANTIGRAVITY_COPY_SKILLS[@]} Anti-Gravity skill(s) failed to install:"
+      for skill in "${FAILED_ANTIGRAVITY_COPY_SKILLS[@]}"; do
+        echo_red "   - ${skill}"
+      done
+    fi
+  fi
+
   if [[ ${all_claude_copy_skills} -gt 0 ]]; then
     if [[ ${#FAILED_CLAUDE_COPY_SKILLS[@]} -eq 0 ]]; then
       echo_green " All ${all_claude_copy_skills} Claude-only skill(s) installed successfully!"
@@ -2613,7 +2743,7 @@ main(){
   echo_green "Installed skills can be listed with: npx skills list --global"
 
   # Exit with failure if any skills, MCPs, npm/pip packages, or plugins failed
-  if [[ ${#FAILED_SKILLS[@]} -gt 0 || ${#FAILED_MCPS[@]} -gt 0 || ${#FAILED_CODEX_MCPS[@]} -gt 0 || ${#FAILED_NPMS[@]} -gt 0 || ${#FAILED_AGENTS_COPY_SKILLS[@]} -gt 0 || ${#FAILED_PIPS[@]} -gt 0 || ${#FAILED_COPY_SKILLS[@]} -gt 0 || ${#FAILED_COPY_SKILLS_ALWAYS[@]} -gt 0 || ${#FAILED_MATH_COPY_SKILLS[@]} -gt 0 || ${#FAILED_CLAUDE_COPY_SKILLS[@]} -gt 0 || ${#FAILED_PLUGINS[@]} -gt 0 || ${#FAILED_CODEX_PLUGINS[@]} -gt 0 || ${#FAILED_REPO_TOOL_PIPS[@]} -gt 0 || ${#FAILED_REPO_TOOL_NPMS[@]} -gt 0 || ${#FAILED_GEMINI_MCPS[@]} -gt 0 || ${#FAILED_ANTIGRAVITY_MCPS[@]} -gt 0 ]]; then
+  if [[ ${#FAILED_SKILLS[@]} -gt 0 || ${#FAILED_MCPS[@]} -gt 0 || ${#FAILED_CODEX_MCPS[@]} -gt 0 || ${#FAILED_NPMS[@]} -gt 0 || ${#FAILED_AGENTS_COPY_SKILLS[@]} -gt 0 || ${#FAILED_PIPS[@]} -gt 0 || ${#FAILED_COPY_SKILLS[@]} -gt 0 || ${#FAILED_COPY_SKILLS_ALWAYS[@]} -gt 0 || ${#FAILED_MATH_COPY_SKILLS[@]} -gt 0 || ${#FAILED_CLAUDE_COPY_SKILLS[@]} -gt 0 || ${#FAILED_ANTIGRAVITY_COPY_SKILLS[@]} -gt 0 || ${#FAILED_PLUGINS[@]} -gt 0 || ${#FAILED_CODEX_PLUGINS[@]} -gt 0 || ${#FAILED_REPO_TOOL_PIPS[@]} -gt 0 || ${#FAILED_REPO_TOOL_NPMS[@]} -gt 0 || ${#FAILED_GEMINI_MCPS[@]} -gt 0 || ${#FAILED_ANTIGRAVITY_MCPS[@]} -gt 0 ]]; then
     exit 1
   fi
 

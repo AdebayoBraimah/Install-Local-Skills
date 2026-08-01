@@ -35,7 +35,7 @@ When `--eng` (or `--engineering`) is passed, **one additional phase** runs:
 
 `--eng` is independent of `--local`, `--math`, and `--repo-tools`; any combination may be passed.
 
-> **Note:** Phase 1 requires `npx`. Phases 2 and 8 require the `claude` CLI. Phases 3 and 9 require the `codex` CLI. The `--local` pip phase requires `uv` or `pip`. The `--math` phase requires Lean 4 + Lake on PATH for runtime verification (not auto-installed). Missing CLIs cause the corresponding phases to be skipped. codex and gemini are universal agents and are already handled by `skills.sh` — no extra steps needed.
+> **Note:** Phase 1 requires `npx`. Phases 2 and 8 require the `claude` CLI. Phases 3 and 9 require the `codex` CLI. The `--local` pip phase requires `uv` or `pip`. The `--math` phase requires Lean 4 + Lake on PATH for runtime verification (not auto-installed). Missing CLIs cause the corresponding phases to be skipped. codex and antigravity are universal agents and are already handled by `skills.sh` — no extra steps needed.
 
 > **Python installs use `uv` by default.** Before Phase 1 the script ensures `uv` is available — bootstrapping it via `pip install --user uv` (with a PEP 668 `--break-system-packages` retry) when missing — and routes every pip install through a helper that prefers `uv pip install` and falls back to the target interpreter's `pip`. It also installs [SkillSpector](https://github.com/NVIDIA/skillspector) via `uv tool install` first, then scans the installed skills after all phases complete (detection-after-fetch, so remote `npx`-fetched skills are inspected too). Both the `uv` bootstrap and the SkillSpector scan are best-effort and non-fatal.
 
@@ -94,7 +94,7 @@ git add submodules/claude-deep-research-skill
 git commit -m "MNT: Bumped claude-deep-research-skill submodule"
 ```
 
-If a submodule is left uninitialized, `install-skills.sh` skips the corresponding skill. `gsd` is **no longer installed** by the script; on every run it unconditionally **removes any stale `gsd` install** (including the leaky upstream version) from `~/.agents/skills/`, `~/.claude/skills/`, and `~/.gemini/antigravity/skills/`. For `deep-research-academic`, any prior install is left untouched.
+If a submodule is left uninitialized, `install-skills.sh` skips the corresponding skill. `gsd` is **no longer installed** by the script; on every run it unconditionally **removes any stale `gsd` install** (including the leaky upstream version) from `~/.agents/skills/` and `~/.claude/skills/`. For `deep-research-academic`, any prior install is left untouched.
 
 ## Usage
 
@@ -672,7 +672,7 @@ There are five copy skill arrays, each targeting a different destination and gat
 | `LOCAL_CLAUDE_COPY_SKILLS` | `~/.claude/skills/` | none | `--local` |
 | `MATH_COPY_SKILLS` | `~/.agents/skills/` | `~/.claude/skills/` | `--math` |
 
-> **Note:** Gemini CLI and Antigravity IDE discover skills directly from `~/.agents/skills/`, so no symlink under `~/.gemini/antigravity/skills/` is needed. Prior script-created entries there are cleaned up on the next install when they point at the canonical target.
+> **Note:** Anti-Gravity agents discover skills directly from `~/.agents/skills/`.
 
 > **Repo as source of truth:** Each install run overwrites the matching `~/.agents/skills/<name>/` entries with the bundled copies in this repo. To promote a local edit back into the repo, copy from `~/.agents/skills/<name>/` into `skills/<name>/`, re-run the path-portability rewrite, and commit. Skills are overwritten only when their gating flag matches:
 >
