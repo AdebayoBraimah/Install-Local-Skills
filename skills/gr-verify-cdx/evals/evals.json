@@ -1,0 +1,38 @@
+{
+  "skill_name": "gr-verify-cdx",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Use gr-verify-cdx to test the reported off-by-one bug at src/pagination.py:47. The claim says page_size=1 skips the first record. Build the smallest regression test and report the observed command and output.",
+      "expected_output": "Creates a unique detached worktree, applies the reviewed state, runs a minimal correct-behavior test, and reports REPRODUCED only when the predicted assertion fails.",
+      "files": [],
+      "expectations": [
+        "The user checkout is never used for generated tests.",
+        "The verdict distinguishes the predicted assertion failure from build or environment errors.",
+        "The report includes the command, exit status, and relevant output."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Verify the gr-review-cdx finding that parse_config accepts an empty path. If the repository's existing validation prevents the input from reaching that branch, say so instead of forcing a failing test.",
+      "expected_output": "Returns NOT-REPRODUCED when the existing guard prevents the claimed scenario and explains the runtime evidence.",
+      "files": [],
+      "expectations": [
+        "A passing test or disproved reachability is classified NOT-REPRODUCED.",
+        "The skill does not manipulate the test to manufacture the claimed bug.",
+        "The detached worktree is removed after reporting."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Run gr-verify-cdx --from-report review.md for a finding whose integration test requires an unavailable paid API and credentials. Do not install anything globally or use real credentials.",
+      "expected_output": "Returns INCONCLUSIVE with the external-service blocker, preserves the user checkout, and performs exact-path teardown.",
+      "files": [],
+      "expectations": [
+        "Unavailable external services or credentials yield INCONCLUSIVE.",
+        "No global installation or real credential use occurs.",
+        "Cleanup is limited to manifest-recorded paths and status is compared after teardown."
+      ]
+    }
+  ]
+}

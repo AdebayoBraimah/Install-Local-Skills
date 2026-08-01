@@ -1,0 +1,31 @@
+{
+  "skill_name": "gr-ask-cdx",
+  "evals": [
+    {
+      "id": 0,
+      "prompt": "Use gr-ask-cdx --deep in this indexed repository to explain how an incoming install request reaches the local-copy skill installer, which functions call it, and what guards determine whether that phase runs. Give me citations I can verify.",
+      "expected_output": "Uses a fresh read-only retrieval agent, current GitNexus query/context/trace/impact and PDG routing as applicable, validates every source location, and returns the original direct-answer and Evidence structure without modifying the repository.",
+      "expectations": [
+        "Uses graph query for discovery, context for ordinary symbol explanation, trace for the multi-hop path, impact or api_impact for callers/dependents, and pdg_query for statement-level guards when available.",
+        "Does not use GitNexus explain for ordinary symbol explanation; explain is reserved for persisted taint findings.",
+        "For --deep, launches one fresh read-only retrieval subagent with a unique legal gr_ask_<run_token>_retrieval task name, or explicitly discloses an inline fallback when subagents are unavailable.",
+        "Validates that every repository-relative path and line exists and that the surrounding source supports the associated claim.",
+        "Returns a direct answer followed by grounded explanation and an Evidence section with path:line citations, while making no repository changes."
+      ],
+      "files": []
+    },
+    {
+      "id": 1,
+      "prompt": "Run gr-ask-cdx here. GitNexus has no current index for this checkout. Where is plugin config enablement implemented, why does it use awk, and when was that logic introduced? Please answer from the repository and don't change anything.",
+      "expected_output": "Falls back to ripgrep, direct source reads, and read-only Git history; discloses degraded confidence and provides validated path:line citations in the preserved answer format.",
+      "expectations": [
+        "Detects the absent or stale graph and clearly identifies degraded textual-search mode without attempting to index the repository.",
+        "Uses rg and direct source reading for implementation evidence and read-only git log -S or git blame for history evidence.",
+        "States that degraded retrieval may miss dynamic dispatch, reflection, generated code, or indirect dependencies.",
+        "Validates each cited repository-relative path and line against the current source and drops or labels unsupported claims.",
+        "Uses the direct-answer, explanation, Evidence, and optional deeper-follow-up structure and performs no edits, builds, tests, installs, staging, commits, or pushes."
+      ],
+      "files": []
+    }
+  ]
+}

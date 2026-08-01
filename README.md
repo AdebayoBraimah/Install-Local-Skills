@@ -147,6 +147,21 @@ independent reviewers, verification, and Chair synthesis. The separate
 `research-council-clc` skill remains the Claude Code version and uses Claude's
 Workflow orchestration.
 
+The normal install also includes the Codex-native GR code-intelligence suite:
+
+```text
+gr-ask-cdx "How does request authentication reach the session store?"
+gr-review-cdx --base main
+gr-learnings-cdx --dry-run --since 50
+gr-verify-cdx --from-report path/to/gr-review.md
+```
+
+`gr-ask-cdx` answers repository questions with cited graph context;
+`gr-review-cdx` reviews a working diff, branch, or PR with independent reviewer
+and verifier subagents; `gr-learnings-cdx` mines recurring review standards into
+`LEARNINGS.md`; and `gr-verify-cdx` tests findings in a disposable worktree. The
+separate `gr-*-clc` skills remain the Claude Code variants.
+
 ## Getting Started Workflows
 
 Start with the workflow guide that matches the project state:
@@ -354,6 +369,10 @@ Copied into `~/.agents/skills/` only. No symlinks are created — these are avai
 | Engineering workflow | `judgement-engineering-cdx` | `skills/judgement-engineering-cdx/` | Codex judgement gate for problem framing, reversibility, and stop/go decisions before planning |
 | Engineering workflow | `looped-engineering-cdx` | `skills/looped-engineering-cdx/` | Codex adaptive engineering loop for orientation, planning, execution, verification, closeout, and alerts |
 | Planning | `plan-review-cdx` | `skills/plan-review-cdx/` | Two-reviewer QA loop for Codex (spec + execution reviewers) |
+| Code intelligence | `gr-review-cdx` | `skills/gr-review-cdx/` | Codex graph-context code review with independent correctness, security, impact, conventions, and verification passes |
+| Code intelligence | `gr-ask-cdx` | `skills/gr-ask-cdx/` | Codex repository Q&A with GitNexus context and path:line citations |
+| Code intelligence | `gr-learnings-cdx` | `skills/gr-learnings-cdx/` | Codex miner for recurring, provenance-backed review rules in `LEARNINGS.md` |
+| Code intelligence | `gr-verify-cdx` | `skills/gr-verify-cdx/` | Codex runtime validation of review findings in isolated worktrees |
 | Literature / research | `lit-review-cdx` | `skills/lit-review-cdx/` | Codex literature review skill |
 | Literature / research | `lit-summarizer-cdx` | `skills/lit-summarizer-cdx/` | Codex literature summarization skill |
 | Literature / research | `lit-survey-cdx` | `skills/lit-survey-cdx/` | Codex literature survey skill |
@@ -368,6 +387,10 @@ Copied directly into `~/.claude/skills/` only. These are exclusive to Claude Cod
 | Engineering workflow | `judgement-engineering-clc` | `skills/judgement-engineering-clc/` | Claude Code judgement gate for problem framing, reversibility, and stop/go decisions before planning |
 | Engineering workflow | `looped-engineering-clc` | `skills/looped-engineering-clc/` | Claude Code adaptive engineering loop for orientation, planning, execution, verification, closeout, and alerts |
 | Planning | `plan-review-clc` | `skills/plan-review-clc/` | Two-reviewer QA loop with default Claude+Codex pairing and a `claude-only` fallback (auto-engaged when Codex is unavailable, e.g. on HPC SLURM nodes) |
+| Code intelligence | `gr-review-clc` | `skills/gr-review-clc/` | Claude graph-context code review with parallel dimension reviewers and adversarial verification |
+| Code intelligence | `gr-ask-clc` | `skills/gr-ask-clc/` | Claude repository Q&A with GitNexus context and path:line citations |
+| Code intelligence | `gr-learnings-clc` | `skills/gr-learnings-clc/` | Claude miner for recurring, provenance-backed review rules in `LEARNINGS.md` |
+| Code intelligence | `gr-verify-clc` | `skills/gr-verify-clc/` | Claude runtime validation of review findings in isolated worktrees |
 | Literature / research | `lit-review-clc` | `skills/lit-review-clc/` | Claude literature review skill |
 | Literature / research | `lit-summarizer-clc` | `skills/lit-summarizer-clc/` | Claude literature summarization skill |
 | Literature / research | `lit-survey-clc` | `skills/lit-survey-clc/` | Claude literature survey skill |
@@ -676,7 +699,7 @@ There are five copy skill arrays, each targeting a different destination and gat
 
 > **Repo as source of truth:** Each install run overwrites the matching `~/.agents/skills/<name>/` entries with the bundled copies in this repo. To promote a local edit back into the repo, copy from `~/.agents/skills/<name>/` into `skills/<name>/`, re-run the path-portability rewrite, and commit. Skills are overwritten only when their gating flag matches:
 >
-> - Always overwritten: `data-viz`, `research-engineer-ai-ml`, `pangram`, `ai-anti-pattern-review`, `obsidian-graphrag-index`, `obsidian-llamaindex-vector-indexing`, `alert-me` (`COPY_SKILLS`); `judgement-engineering-cdx`, `looped-engineering-cdx`, `plan-review-cdx`, `lit-*-cdx`, `research-council-cdx` (`AGENTS_COPY_SKILLS`); `judgement-engineering-clc`, `looped-engineering-clc`, `plan-review-clc`, `lit-*-clc`, `research-council-clc` (`CLAUDE_COPY_SKILLS`).
+> - Always overwritten: `data-viz`, `research-engineer-ai-ml`, `pangram`, `ai-anti-pattern-review`, `obsidian-graphrag-index`, `obsidian-llamaindex-vector-indexing`, `alert-me` (`COPY_SKILLS`); `judgement-engineering-cdx`, `looped-engineering-cdx`, `plan-review-cdx`, `gr-*-cdx`, `lit-*-cdx`, `research-council-cdx` (`AGENTS_COPY_SKILLS`); `judgement-engineering-clc`, `looped-engineering-clc`, `plan-review-clc`, `gr-*-clc`, `lit-*-clc`, `research-council-clc` (`CLAUDE_COPY_SKILLS`).
 > - Overwritten only with `--local`: `gimp`, `inkscape` (`LOCAL_COPY_SKILLS`).
 > - Overwritten only with `--math`: `mathematician`, `mathematician-ai-ml` (`MATH_COPY_SKILLS`).
 

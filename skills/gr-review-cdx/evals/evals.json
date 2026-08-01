@@ -1,0 +1,41 @@
+{
+  "skill_name": "gr-review-cdx",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Use gr-review-cdx to review the current working changes in an indexed repository. A changed public function has several downstream callers and the repository has a LEARNINGS.md file.",
+      "expected_output": "Builds full graph context, runs four independent review dimensions and adversarial verification, and returns the unchanged ranked Gr Review report without modifying product code.",
+      "files": [],
+      "expectations": [
+        "Creates a unique workspace-local .codex/gr-review run root and records owned paths",
+        "Uses current GitNexus context and impact operations without treating explain as a general symbol explainer",
+        "Runs four independent reviewer seats and adversarial verification in capacity-limited waves",
+        "Produces the ranked Gr Review report and does not modify product code"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Use gr-review-cdx to review feature/payments against release. GitNexus is unavailable and the diff is over 1,500 changed lines.",
+      "expected_output": "Reviews prioritized branch changes in explicit degraded mode, names all deferrals, and preserves report semantics with lower-confidence impact findings.",
+      "files": [],
+      "expectations": [
+        "Continues in explicit degraded mode using rg, git grep, and direct file reads",
+        "Names prioritized and deferred files rather than silently truncating",
+        "Labels graph-impact conclusions lower-confidence",
+        "Preserves the original report structure and states Graph context: degraded"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Use gr-review-cdx --comment 42. One reviewer returns malformed JSON twice and one verifier never returns, while two other reviewers succeed.",
+      "expected_output": "Completes a reduced-confidence review from valid seats, handles one-shot corrections and failed verification soundly, and posts only the explicitly authorized PR summary.",
+      "files": [],
+      "expectations": [
+        "Allows exactly one correction attempt for malformed reviewer and verifier output",
+        "Continues with successful dimensions, discloses missing perspectives, and treats failed verification as unverified",
+        "Posts only the final PR summary because --comment was explicit",
+        "Retains the local report if posting fails and safely cleans only run-owned paths"
+      ]
+    }
+  ]
+}

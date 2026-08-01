@@ -168,6 +168,12 @@ AGENTS_COPY_SKILLS=(
   "${SCRIPT_DIR}/skills/looped-engineering-cdx"                                "looped-engineering-cdx"
   "${SCRIPT_DIR}/skills/plan-review-cdx"                                        "plan-review-cdx"
 
+  # --- Code review (gr-* code-intelligence suite) ---
+  "${SCRIPT_DIR}/skills/gr-review-cdx"                                          "gr-review-cdx"
+  "${SCRIPT_DIR}/skills/gr-ask-cdx"                                             "gr-ask-cdx"
+  "${SCRIPT_DIR}/skills/gr-learnings-cdx"                                       "gr-learnings-cdx"
+  "${SCRIPT_DIR}/skills/gr-verify-cdx"                                          "gr-verify-cdx"
+
   # --- Literature / research ---
   "${SCRIPT_DIR}/skills/lit-review-cdx"                                         "lit-review-cdx"
   "${SCRIPT_DIR}/skills/lit-summarizer-cdx"                                     "lit-summarizer-cdx"

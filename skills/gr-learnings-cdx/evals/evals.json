@@ -1,0 +1,41 @@
+{
+  "skill_name": "gr-learnings-cdx",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "In this authenticated GitHub repository, run gr-learnings-cdx --since 75 --min-occurrences 3. Mine our merged PR review history and update the existing LEARNINGS.md, but preserve every hand-written rule.",
+      "expected_output": "The skill harvests both inline and PR-level human comments into a unique workspace-local run, recurrence-gates and validates mined candidates, presents an auditable diff, and appends only new provenance-backed rules after confirmation.",
+      "files": [],
+      "expectations": [
+        "Uses authenticated gh data from the selected 75 merged PRs and excludes bots, approvals, questions, and non-normative one-offs.",
+        "Uses a legal unique Codex miner task for a large corpus, validates candidates.json, and permits only one correction before a sound inline fallback.",
+        "Preserves all existing human-authored LEARNINGS.md content and appends only semantically new rules with occurrence counts and source links.",
+        "Shows the exact proposed diff before modifying LEARNINGS.md and limits all operational files to a manifest-owned .codex/gr-learnings run root."
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Run gr-learnings-cdx --dry-run --since 2026-01-01 against this repo. I only want to inspect proposed standards; do not touch LEARNINGS.md.",
+      "expected_output": "The skill mines only PRs merged on or after the date, writes an auditable proposal under the run-local path, leaves LEARNINGS.md unchanged, and cleans all disposable state while preserving the proposal.",
+      "files": [],
+      "expectations": [
+        "Treats the date as a merged-PR date filter rather than a PR-count limit.",
+        "Does not create or modify LEARNINGS.md in dry-run mode.",
+        "Reports the absolute preserved proposal.md path with accepted rules, rejected candidates, recurrence counts, confidence, and provenance.",
+        "Removes only manifest-owned disposable children and retains the dry-run proposal."
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "gh is not installed on this machine. Use gr-learnings-cdx to infer review standards locally from the repository, including CONTRIBUTING.md, Ruff config, pre-commit hooks, and corrective commit messages. Propose what would change without editing code.",
+      "expected_output": "The skill explains the weaker offline mode, mines codified local policy and recurring corrective history, clearly labels local provenance and lower confidence, and changes no product files.",
+      "files": [],
+      "expectations": [
+        "Explains that authenticated GitHub review comments are unavailable and obtains acceptance before using local fallback.",
+        "Uses repository policy/configuration and recurring corrective commits without misrepresenting them as PR-comment recurrence.",
+        "Labels each accepted rule with honest local provenance and lower confidence, while still recurrence-gating ordinary commit-message patterns.",
+        "Writes no product code and does not modify LEARNINGS.md when operating as a proposal-only fallback."
+      ]
+    }
+  ]
+}
