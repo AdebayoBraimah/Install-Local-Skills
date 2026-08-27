@@ -212,6 +212,7 @@ CLAUDE_COPY_SKILLS=(
   "${SCRIPT_DIR}/skills/lit-summarizer-clc"                                     "lit-summarizer-clc"
   "${SCRIPT_DIR}/skills/lit-survey-clc"                                         "lit-survey-clc"
   "${SCRIPT_DIR}/skills/research-council-clc"                                   "research-council-clc"
+  "${SCRIPT_DIR}/skills/manuscript-review-clc"                                  "manuscript-review-clc"
 )
 
 

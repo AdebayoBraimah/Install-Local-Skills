@@ -395,6 +395,7 @@ Copied directly into `~/.claude/skills/` only. These are exclusive to Claude Cod
 | Literature / research | `lit-summarizer-clc` | `skills/lit-summarizer-clc/` | Claude literature summarization skill |
 | Literature / research | `lit-survey-clc` | `skills/lit-survey-clc/` | Claude literature survey skill |
 | Literature / research | `research-council-clc` | `skills/research-council-clc/` | Adversarial academic review council (AI/ML + math): parallel persona reviewers via the Workflow tool with chair synthesis, tiered quick/standard/full |
+| Literature / research | `manuscript-review-clc` | `skills/manuscript-review-clc/` | ICLR-calibre manuscript peer review: parallel reviewer personas calibrated on real ICLR 2026 reviews/outcomes, optional weakness verification, Area Chair meta-review with decision leaning, tiered quick/standard/full |
 
 ### Shared Skills
 
@@ -699,7 +700,7 @@ There are five copy skill arrays, each targeting a different destination and gat
 
 > **Repo as source of truth:** Each install run overwrites the matching `~/.agents/skills/<name>/` entries with the bundled copies in this repo. To promote a local edit back into the repo, copy from `~/.agents/skills/<name>/` into `skills/<name>/`, re-run the path-portability rewrite, and commit. Skills are overwritten only when their gating flag matches:
 >
-> - Always overwritten: `data-viz`, `research-engineer-ai-ml`, `pangram`, `ai-anti-pattern-review`, `obsidian-graphrag-index`, `obsidian-llamaindex-vector-indexing`, `alert-me` (`COPY_SKILLS`); `judgement-engineering-cdx`, `looped-engineering-cdx`, `plan-review-cdx`, `gr-*-cdx`, `lit-*-cdx`, `research-council-cdx` (`AGENTS_COPY_SKILLS`); `judgement-engineering-clc`, `looped-engineering-clc`, `plan-review-clc`, `gr-*-clc`, `lit-*-clc`, `research-council-clc` (`CLAUDE_COPY_SKILLS`).
+> - Always overwritten: `data-viz`, `research-engineer-ai-ml`, `pangram`, `ai-anti-pattern-review`, `obsidian-graphrag-index`, `obsidian-llamaindex-vector-indexing`, `alert-me` (`COPY_SKILLS`); `judgement-engineering-cdx`, `looped-engineering-cdx`, `plan-review-cdx`, `gr-*-cdx`, `lit-*-cdx`, `research-council-cdx` (`AGENTS_COPY_SKILLS`); `judgement-engineering-clc`, `looped-engineering-clc`, `plan-review-clc`, `gr-*-clc`, `lit-*-clc`, `research-council-clc`, `manuscript-review-clc` (`CLAUDE_COPY_SKILLS`).
 > - Overwritten only with `--local`: `gimp`, `inkscape` (`LOCAL_COPY_SKILLS`).
 > - Overwritten only with `--math`: `mathematician`, `mathematician-ai-ml` (`MATH_COPY_SKILLS`).
 
