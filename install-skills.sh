@@ -55,6 +55,10 @@ SKILLS=(
 
   # --- Writing ---
   "davila7/claude-code-templates"                                               "humanizer"
+  "cursor/plugins"                                                              "unslop"
+
+  # --- Code understanding ---
+  "poteto/how"                                                                  "how"
 
   # --- Diagrams ---
   "ooiyeefei/ccc"                                                               "excalidraw"
