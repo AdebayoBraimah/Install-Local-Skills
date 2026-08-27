@@ -1,0 +1,25 @@
+{
+  "UserPromptSubmit": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash \"__HOOK_DIR__/turn-timer.sh\" start",
+          "timeout": 5
+        }
+      ]
+    }
+  ],
+  "Stop": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash \"__HOOK_DIR__/turn-timer.sh\" stop",
+          "timeout": 15,
+          "async": true
+        }
+      ]
+    }
+  ]
+}

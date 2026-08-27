@@ -53,7 +53,12 @@ to ask you something). It **cannot** fire on an *abnormal* stop the agent never
 observes — a crash, an abort/cancel, or the process being killed — because the
 model is no longer running to invoke it.
 
-To alert on those abnormal-stop cases ("stop for **any** reason" in the literal
-sense), add a **Stop hook** in `settings.json`: the harness runs the hook
-itself, independent of the model. That is an optional follow-up and is out of
-scope for this skill. Do not assume crash/abort coverage from alert-me alone.
+Those cases are covered by a **Stop hook**, which the harness runs itself,
+independent of the model. That hook is **Claude Code specific** and is
+documented separately in [`CLAUDE-CODE-HOOK.md`](CLAUDE-CODE-HOOK.md) — see
+that file for what it installs, how to configure the threshold, and how to
+remove it. `install-skills.sh` installs it automatically when Claude Code and
+`jq` are present.
+
+On any other agent, or if that hook is not installed, do not assume
+crash/abort coverage from alert-me alone.

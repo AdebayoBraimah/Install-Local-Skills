@@ -704,6 +704,31 @@ There are five copy skill arrays, each targeting a different destination and gat
 > - Overwritten only with `--local`: `gimp`, `inkscape` (`LOCAL_COPY_SKILLS`).
 > - Overwritten only with `--math`: `mathematician`, `mathematician-ai-ml` (`MATH_COPY_SKILLS`).
 
+## Claude Code Hooks
+
+**Claude Code specific.** Hooks are a Claude Code feature — Codex, Anti-Gravity, and Gemini have no equivalent and are unaffected by this phase.
+
+Some skills need a lifecycle hook to do their job, not just a prompt. The `CLAUDE_HOOKS` array installs those. Each entry is a pair of `<source-hooks-dir>` and `<hook-name>`:
+
+| Array | Scripts target | Settings target | Flag |
+|---|---|---|---|
+| `CLAUDE_HOOKS` | `~/.claude/hooks/<hook-name>/` | `~/.claude/settings.json` → `hooks` | always |
+
+The source directory must contain:
+
+- one or more `*.sh` scripts, copied verbatim into `~/.claude/hooks/<hook-name>/`
+- `claude-hooks.json` — a fragment of the `hooks` object from `settings.json` declaring which events the hook binds to. The token `__HOOK_DIR__` is replaced with the real install directory at install time, so the fragment stays machine-independent.
+
+The merge is **idempotent**: an entry whose resolved command is already present is never added twice, so re-running the installer is a no-op on `settings.json`. Scripts are always refreshed, so edits in the repo do propagate. Hooks from other sources are preserved, only the missing entries are appended, and a timestamped `settings.json.bak.<ts>` is written before any modification. A `settings.json` that is not valid JSON is refused outright rather than overwritten.
+
+The phase requires `jq` and the `claude` CLI, and is skipped with a warning if either is missing.
+
+Currently registered:
+
+| Hook | Skill | Events | What it does |
+|---|---|---|---|
+| `alert-me` | `alert-me` | `UserPromptSubmit`, `Stop` | Pushes an ntfy notification when a turn stops after running longer than `ALERT_ME_MIN_SECONDS` (default 120). Covers the crash/abort/kill cases the passive skill cannot observe. See [`skills/alert-me/CLAUDE-CODE-HOOK.md`](skills/alert-me/CLAUDE-CODE-HOOK.md). |
+
 Each entry is a pair — a source path and a skill name:
 
 ```bash

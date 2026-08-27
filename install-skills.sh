@@ -428,6 +428,37 @@ LOCAL_CLAUDE_COPY_SKILLS=(
 
 # =========================================================================
 #
+# Claude Code hooks registry (always installed)
+#
+#   CLAUDE CODE SPECIFIC. Hooks are a Claude Code feature; Codex,
+#   Anti-Gravity, and Gemini have no equivalent and are unaffected.
+#
+#   Each entry is a pair: <source-hooks-dir> followed by <hook-name>.
+#
+#   The source directory must contain:
+#     - one or more executable scripts, copied verbatim to
+#       ~/.claude/hooks/<hook-name>/
+#     - claude-hooks.json — a fragment of the "hooks" object from
+#       settings.json, declaring the events this hook binds to. The token
+#       __HOOK_DIR__ is replaced with the real install directory.
+#
+#   The merge into ~/.claude/settings.json is idempotent: an entry whose
+#   command already exists is never added twice. Pre-existing hooks from
+#   other sources are preserved, and a timestamped backup is written
+#   before any modification.
+#
+#   Requires jq and the claude CLI; skipped with a warning otherwise.
+#
+# =========================================================================
+
+CLAUDE_HOOKS=(
+  # --- Notifications ---
+  "${SCRIPT_DIR}/skills/alert-me/hooks"                                         "alert-me"
+)
+
+
+# =========================================================================
+#
 # Math copy skills registry (installed with --math)
 #
 #   Each entry is a pair: <source-path> followed by <skill-name>.
@@ -1636,6 +1667,175 @@ install_local_claude_copy_skill(){
 
 
 #######################################
+# Installs a Claude Code hook.
+#   CLAUDE CODE SPECIFIC — no other agent
+#   reads ~/.claude/settings.json.
+#
+#   Copies the hook scripts into
+#   ~/.claude/hooks/<hook-name>/ and merges
+#   claude-hooks.json into the "hooks" object
+#   of ~/.claude/settings.json.
+#
+#   Idempotent: a hook entry whose command is
+#   already present is skipped, so re-running
+#   never duplicates entries. Scripts are
+#   always refreshed so updates land.
+#
+# Arguments:
+#   1 - source hooks directory
+#   2 - hook name
+#######################################
+install_claude_hook(){
+  local source_dir="${1}"
+  local hook_name="${2}"
+  local hook_dir="${HOME}/.claude/hooks/${hook_name}"
+  local settings="${HOME}/.claude/settings.json"
+  local fragment="${source_dir}/claude-hooks.json"
+
+  echo_blue "Installing Claude Code hook: ${hook_name}  (from ${source_dir})"
+
+  if [[ ! -d "${source_dir}" ]]; then
+    echo_red "  -> Source directory not found: ${source_dir}"
+    FAILED_CLAUDE_HOOKS+=("${hook_name}")
+    echo
+    return
+  fi
+
+  if [[ ! -f "${fragment}" ]]; then
+    echo_red "  -> Missing claude-hooks.json in ${source_dir}"
+    FAILED_CLAUDE_HOOKS+=("${hook_name}")
+    echo
+    return
+  fi
+
+  if ! jq -e . "${fragment}" >/dev/null 2>&1; then
+    echo_red "  -> claude-hooks.json is not valid JSON: ${fragment}"
+    FAILED_CLAUDE_HOOKS+=("${hook_name}")
+    echo
+    return
+  fi
+
+  # ---- Copy the hook scripts (always refresh) ----
+  mkdir -p "${hook_dir}"
+  local script_count=0
+  local f
+  for f in "${source_dir}"/*.sh; do
+    [[ -e "${f}" ]] || continue
+    if ! cp "${f}" "${hook_dir}/"; then
+      echo_red "  -> Failed to copy $(basename "${f}") to ${hook_dir}"
+      FAILED_CLAUDE_HOOKS+=("${hook_name}")
+      echo
+      return
+    fi
+    chmod +x "${hook_dir}/$(basename "${f}")"
+    script_count=$(( script_count + 1 ))
+  done
+
+  if [[ ${script_count} -eq 0 ]]; then
+    echo_red "  -> No .sh scripts found in ${source_dir}"
+    FAILED_CLAUDE_HOOKS+=("${hook_name}")
+    echo
+    return
+  fi
+
+  echo_green "  -> Copied ${script_count} script(s) to ${hook_dir}"
+
+  # ---- Resolve __HOOK_DIR__ into the real install path ----
+  local resolved
+  if ! resolved="$(sed "s|__HOOK_DIR__|${hook_dir}|g" "${fragment}")"; then
+    echo_red "  -> Failed to resolve __HOOK_DIR__ in ${fragment}"
+    FAILED_CLAUDE_HOOKS+=("${hook_name}")
+    echo
+    return
+  fi
+
+  # ---- Ensure settings.json exists and is valid ----
+  mkdir -p "$(dirname "${settings}")"
+  if [[ ! -f "${settings}" ]]; then
+    echo '{}' > "${settings}"
+    echo_yellow "  -> Created ${settings}"
+  elif ! jq -e . "${settings}" >/dev/null 2>&1; then
+    echo_red "  -> ${settings} is not valid JSON — refusing to modify it"
+    FAILED_CLAUDE_HOOKS+=("${hook_name}")
+    echo
+    return
+  fi
+
+  # ---- Already installed? ----
+  # Match on the resolved command strings. If every command in the fragment
+  # is already present under its event, there is nothing to do.
+  local missing
+  missing="$(jq -n \
+    --argjson frag "${resolved}" \
+    --slurpfile cur "${settings}" \
+    '
+      ($cur[0].hooks // {}) as $existing
+      | [ $frag | to_entries[]
+          | .key as $event
+          | .value[]
+          | .hooks[]
+          | .command
+          | select( ( [ $existing[$event] // [] | .[]? | .hooks[]? | .command ] | index(.) ) == null )
+        ] | length
+    ' 2>/dev/null)" || missing=""
+
+  if [[ -z "${missing}" ]]; then
+    echo_red "  -> Failed to inspect existing hooks in ${settings}"
+    FAILED_CLAUDE_HOOKS+=("${hook_name}")
+    echo
+    return
+  fi
+
+  if [[ "${missing}" -eq 0 ]]; then
+    echo_green "  -> Already installed in ${settings} — scripts refreshed, settings unchanged"
+    echo_green "  -> ${hook_name} hook installed successfully"
+    echo
+    return
+  fi
+
+  # ---- Back up, then merge only the missing entries ----
+  local backup="${settings}.bak.$(date +%Y%m%d%H%M%S)"
+  cp "${settings}" "${backup}"
+
+  local merged
+  if ! merged="$(jq \
+    --argjson frag "${resolved}" \
+    '
+      .hooks = ( (.hooks // {}) as $existing
+        | reduce ($frag | to_entries[]) as $e ($existing;
+            .[$e.key] = ( ( .[$e.key] // [] )
+              + [ $e.value[]
+                  | select( [ .hooks[].command ] as $new
+                      | ( [ $existing[$e.key] // [] | .[]? | .hooks[]? | .command ] ) as $old
+                      | ( $new | map( . as $c | $old | index($c) ) | all(. == null) ) )
+                ] )
+          ) )
+    ' "${settings}")"; then
+    echo_red "  -> jq merge failed — ${settings} left unchanged (backup: ${backup})"
+    FAILED_CLAUDE_HOOKS+=("${hook_name}")
+    echo
+    return
+  fi
+
+  # Validate before overwriting the real file.
+  if ! printf '%s' "${merged}" | jq -e . >/dev/null 2>&1; then
+    echo_red "  -> Merged settings are not valid JSON — ${settings} left unchanged (backup: ${backup})"
+    FAILED_CLAUDE_HOOKS+=("${hook_name}")
+    echo
+    return
+  fi
+
+  printf '%s\n' "${merged}" > "${settings}"
+
+  echo_green "  -> Merged ${missing} hook entr(y/ies) into ${settings}"
+  echo_green "  -> Backup written to ${backup}"
+  echo_yellow "  -> Open /hooks once (or restart Claude Code) to load it in a running session"
+  echo_green "  -> ${hook_name} hook installed successfully"
+  echo
+}
+
+
+#######################################
 # Checks if Anti-Gravity is installed.
 #   Returns 0 if `agy` command exists or
 #   ~/.gemini/antigravity directory exists.
@@ -2190,6 +2390,39 @@ main(){
   fi
 
   #
+  # Install Claude Code hooks (always) - CLAUDE CODE SPECIFIC
+  #============================
+
+  FAILED_CLAUDE_HOOKS=()
+
+  local total_claude_hooks=$(( ${#CLAUDE_HOOKS[@]} / 2 ))
+
+  if [[ ${total_claude_hooks} -gt 0 ]]; then
+    if [[ "${skip_claude}" == true ]]; then
+      echo
+      echo_yellow "Skipping ${total_claude_hooks} Claude Code hook(s) — claude CLI not found."
+    elif ! command -v jq &>/dev/null; then
+      echo
+      echo_yellow "Skipping ${total_claude_hooks} Claude Code hook(s) — jq not found (required to merge settings.json safely)."
+    else
+      echo
+      echo_blue "=========================================="
+      echo_blue " Installing ${total_claude_hooks} Claude Code Hook(s)"
+      echo_blue "=========================================="
+      echo
+
+      local h=0
+      while [[ ${h} -lt ${#CLAUDE_HOOKS[@]} ]]; do
+        local hook_source="${CLAUDE_HOOKS[${h}]}"
+        local hook_name="${CLAUDE_HOOKS[$(( h + 1 ))]}"
+        h=$(( h + 2 ))
+
+        install_claude_hook "${hook_source}" "${hook_name}"
+      done
+    fi
+  fi
+
+  #
   # Install Anti-Gravity copy skills (adapted *-agy skills)
   #============================
 
@@ -2677,6 +2910,17 @@ main(){
     fi
   fi
 
+  if [[ ${total_claude_hooks} -gt 0 ]]; then
+    if [[ ${#FAILED_CLAUDE_HOOKS[@]} -eq 0 ]]; then
+      echo_green " All ${total_claude_hooks} Claude Code hook(s) installed successfully!"
+    else
+      echo_yellow " ${#FAILED_CLAUDE_HOOKS[@]} Claude Code hook(s) failed to install:"
+      for hook in "${FAILED_CLAUDE_HOOKS[@]}"; do
+        echo_red "   - ${hook}"
+      done
+    fi
+  fi
+
   if [[ "${skip_claude}" != true ]]; then
     if [[ ${#FAILED_PLUGINS[@]} -eq 0 && ${total_plugins} -gt 0 ]]; then
       echo_green " All ${total_plugins} Claude Code plugin(s) installed successfully!"
@@ -2750,7 +2994,7 @@ main(){
   echo_green "Installed skills can be listed with: npx skills list --global"
 
   # Exit with failure if any skills, MCPs, npm/pip packages, or plugins failed
-  if [[ ${#FAILED_SKILLS[@]} -gt 0 || ${#FAILED_MCPS[@]} -gt 0 || ${#FAILED_CODEX_MCPS[@]} -gt 0 || ${#FAILED_NPMS[@]} -gt 0 || ${#FAILED_AGENTS_COPY_SKILLS[@]} -gt 0 || ${#FAILED_PIPS[@]} -gt 0 || ${#FAILED_COPY_SKILLS[@]} -gt 0 || ${#FAILED_COPY_SKILLS_ALWAYS[@]} -gt 0 || ${#FAILED_MATH_COPY_SKILLS[@]} -gt 0 || ${#FAILED_CLAUDE_COPY_SKILLS[@]} -gt 0 || ${#FAILED_ANTIGRAVITY_COPY_SKILLS[@]} -gt 0 || ${#FAILED_PLUGINS[@]} -gt 0 || ${#FAILED_CODEX_PLUGINS[@]} -gt 0 || ${#FAILED_REPO_TOOL_PIPS[@]} -gt 0 || ${#FAILED_REPO_TOOL_NPMS[@]} -gt 0 || ${#FAILED_GEMINI_MCPS[@]} -gt 0 || ${#FAILED_ANTIGRAVITY_MCPS[@]} -gt 0 ]]; then
+  if [[ ${#FAILED_SKILLS[@]} -gt 0 || ${#FAILED_MCPS[@]} -gt 0 || ${#FAILED_CODEX_MCPS[@]} -gt 0 || ${#FAILED_NPMS[@]} -gt 0 || ${#FAILED_AGENTS_COPY_SKILLS[@]} -gt 0 || ${#FAILED_PIPS[@]} -gt 0 || ${#FAILED_COPY_SKILLS[@]} -gt 0 || ${#FAILED_COPY_SKILLS_ALWAYS[@]} -gt 0 || ${#FAILED_MATH_COPY_SKILLS[@]} -gt 0 || ${#FAILED_CLAUDE_COPY_SKILLS[@]} -gt 0 || ${#FAILED_CLAUDE_HOOKS[@]} -gt 0 || ${#FAILED_ANTIGRAVITY_COPY_SKILLS[@]} -gt 0 || ${#FAILED_PLUGINS[@]} -gt 0 || ${#FAILED_CODEX_PLUGINS[@]} -gt 0 || ${#FAILED_REPO_TOOL_PIPS[@]} -gt 0 || ${#FAILED_REPO_TOOL_NPMS[@]} -gt 0 || ${#FAILED_GEMINI_MCPS[@]} -gt 0 || ${#FAILED_ANTIGRAVITY_MCPS[@]} -gt 0 ]]; then
     exit 1
   fi
 
