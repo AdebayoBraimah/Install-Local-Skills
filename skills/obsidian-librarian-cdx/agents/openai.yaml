@@ -1,0 +1,4 @@
+interface:
+  display_name: "Obsidian librarian"
+  short_description: "Maintain Zotero notes with protected incremental updates"
+  default_prompt: "Use $obsidian-librarian-cdx to scan this vault for new and changed Zotero sources."

@@ -179,9 +179,12 @@ AGENTS_COPY_SKILLS=(
   "${SCRIPT_DIR}/skills/gr-verify-cdx"                                          "gr-verify-cdx"
 
   # --- Literature / research ---
+  "${SCRIPT_DIR}/skills/lit-search-cdx"                                         "lit-search-cdx"
   "${SCRIPT_DIR}/skills/lit-review-cdx"                                         "lit-review-cdx"
   "${SCRIPT_DIR}/skills/lit-summarizer-cdx"                                     "lit-summarizer-cdx"
   "${SCRIPT_DIR}/skills/lit-survey-cdx"                                         "lit-survey-cdx"
+  "${SCRIPT_DIR}/skills/long-work-summarizer-cdx"                               "long-work-summarizer-cdx"
+  "${SCRIPT_DIR}/skills/obsidian-librarian-cdx"                                 "obsidian-librarian-cdx"
   "${SCRIPT_DIR}/skills/research-council-cdx"                                   "research-council-cdx"
 )
 

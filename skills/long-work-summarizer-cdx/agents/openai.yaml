@@ -1,0 +1,4 @@
+interface:
+  display_name: "Long-work summarizer"
+  short_description: "Read books with verified, resumable chapter notes"
+  default_prompt: "Use $long-work-summarizer-cdx to study a textbook from Zotero and create verified chapter notes."
