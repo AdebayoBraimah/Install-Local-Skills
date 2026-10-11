@@ -238,7 +238,7 @@ If any skills, MCP servers, npm packages, or plugins fail, the summary lists the
 | Diagrams | `excalidraw` | ooiyeefei/ccc |
 | Visualization | `data-visualization` | anthropics/knowledge-work-plugins |
 | Documentation | `context7` | intellectronica/agent-skills |
-| Writing | `humanizer` | davila7/claude-code-templates |
+| Writing | `humanizer` | blader/humanizer |
 | CLI | `cli-anything` | hkuds/cli-anything |
 | Code quality | `ponytail` | dietrichgebert/ponytail |
 

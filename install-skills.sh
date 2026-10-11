@@ -54,7 +54,7 @@ SKILLS=(
   "intellectronica/agent-skills"                                                "context7"
 
   # --- Writing ---
-  "davila7/claude-code-templates"                                               "humanizer"
+  "blader/humanizer"                                                           "humanizer"
   "cursor/plugins"                                                              "unslop"
 
   # --- Code understanding ---
