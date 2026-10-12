@@ -686,7 +686,7 @@ To **add** a Codex plugin, append a new quartet. To **remove** one, delete all f
 
 ## Adding or Removing Copy Skills
 
-There are five copy skill arrays, each targeting a different destination and gated by a different flag. Place the skill directory under `skills/` in this repo, then add an entry to the appropriate array in `install-skills.sh`:
+There are six copy skill arrays, each targeting a different destination and gated by a different flag. Place the skill directory under `skills/` in this repo, then add an entry to the appropriate array in `install-skills.sh`:
 
 | Array | Target | Symlinks | Flag |
 |---|---|---|---|
@@ -697,7 +697,7 @@ There are five copy skill arrays, each targeting a different destination and gat
 | `LOCAL_CLAUDE_COPY_SKILLS` | `~/.claude/skills/` | none | `--local` |
 | `MATH_COPY_SKILLS` | `~/.agents/skills/` | `~/.claude/skills/` | `--math` |
 
-> **Note:** Anti-Gravity agents discover skills directly from `~/.agents/skills/`.
+> **Note:** Anti-Gravity agents discover skills directly from `~/.agents/skills/`. The installer no longer creates separate `*-agy` variants.
 
 > **Repo as source of truth:** Each install run overwrites the matching `~/.agents/skills/<name>/` entries with the bundled copies in this repo. To promote a local edit back into the repo, copy from `~/.agents/skills/<name>/` into `skills/<name>/`, re-run the path-portability rewrite, and commit. Skills are overwritten only when their gating flag matches:
 >
