@@ -22,7 +22,7 @@ Use the most specific route that matches the task, then apply consensus only whe
 | `improve-codebase-architecture` | Architecture improvement scans, deepening opportunities, structural reports, and guided architecture improvement workflows. |
 | `superpowers:subagent-driven-development` | Delegated multi-agent implementation workflows, parallel worker planning, subagent ownership boundaries, and worker integration when that superpower is installed or available. |
 | `superpowers:executing-plans` | Execution of an approved plan using the repository's Superpowers workflow conventions when that superpower is installed or available. |
-| `diagnose` | Failing tests, unclear behavior, non-local failures, or unknown root cause. |
+| `diagnosing-bugs` | Failing tests, unclear behavior, non-local failures, or unknown root cause. |
 | `gitnexus-exploring` | Unfamiliar codebase exploration, architecture tracing, call-flow understanding, and "how does this work" questions when GitNexus is available. |
 | `gitnexus-debugging` | Graph-backed root-cause tracing when GitNexus is available. |
 | `gitnexus-impact-analysis` | Blast radius before symbol/API/refactor edits when GitNexus is available. |
@@ -112,7 +112,7 @@ If subagents are unavailable, use inline named review roles with the same status
 ### Tester/verifier
 
 - Trigger: broad shared behavior, elevated but locally testable validation risk, reproducible research/evaluation code, or unresolved failure classification.
-- Invocation mechanism: use test-specific skills when available, `tdd` for behavior changes, `diagnose` for unclear failures, or an inline Tester/verifier role.
+- Invocation mechanism: use test-specific skills when available, `tdd` for behavior changes, `diagnosing-bugs` for unclear failures, or an inline Tester/verifier role.
 - Required input context: changed files, expected behavior, regression suite, acceptance criteria, validation commands, known failures, and residual risk.
 - Expected output artifact: verification note with commands, results, failures, failure classification, and residual risk.
 - Fallback when subagents are unavailable: run available local validation and write an inline Tester/verifier note with confidence and gaps.

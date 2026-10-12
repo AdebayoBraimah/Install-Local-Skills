@@ -38,10 +38,10 @@ SKILLS=(
   "gitstua/stu-skills"                                                          "ntfy-notify"
 
   # --- Research ---
-  "shubhamsaboo/awesome-llm-apps"                                              "deep-research"
-  "shubhamsaboo/awesome-llm-apps"                                              "academic-researcher"
+  "199-biotechnologies/claude-deep-research-skill"                             "deep-research"
+  "silupanda/academic-researcher"                                              "academic-researcher"
   "ailabs-393/ai-labs-claude-skills"                                            "research-paper-writer"
-  "langchain-ai/deepagents"                                                     "web-research"
+  "memi-design/design-skills"                                                  "web-research"
   "davila7/claude-code-templates"                                               "research-engineer"
 
   # --- Diagrams ---
@@ -55,7 +55,7 @@ SKILLS=(
 
   # --- Writing ---
   "blader/humanizer"                                                           "humanizer"
-  "cursor/plugins"                                                              "unslop"
+  "https://github.com/cursor/plugins/tree/main/pstack/skills/unslop"           "unslop"
 
   # --- Code understanding ---
   "poteto/how"                                                                  "how"
@@ -345,10 +345,10 @@ LOCAL_SKILLS=(
 #
 # Engineering-skills registry (installed with --eng / --engineering)
 #
-#   Opinionated workflow skills (Matt Pocock's engineering/ +
-#   productivity/ upstream folders from mattpocock/skills).
+#   Opinionated workflow skills. Current renamed slugs use mattpocock/skills;
+#   zoom-out remains on a compatible mirror because upstream removed it.
 #   Gated behind --eng / --engineering because these are
-#   workflow-shaping (TDD, grilling, PRDs, compressed comms)
+#   workflow-shaping (TDD, grilling, specs, compressed comms)
 #   rather than baseline utilities. The bundle is intentionally
 #   cross-folder. The --eng flag is independent of --local,
 #   --math, and --repo-tools.
@@ -362,18 +362,18 @@ ENGINEERING_SKILLS=(
   # block and docs/agents/ layout the rest depend on.
   "mattpocock/skills"                                                           "setup-matt-pocock-skills"
   "mattpocock/skills"                                                           "tdd"
-  "mattpocock/skills"                                                           "diagnose"
+  "mattpocock/skills"                                                           "diagnosing-bugs"
   "mattpocock/skills"                                                           "grill-me"
   "mattpocock/skills"                                                           "grill-with-docs"
   "mattpocock/skills"                                                           "improve-codebase-architecture"
   "mattpocock/skills"                                                           "triage"
-  "mattpocock/skills"                                                           "zoom-out"
-  "mattpocock/skills"                                                           "to-prd"
-  "mattpocock/skills"                                                           "to-issues"
+  "thangchung/mattpocock-skills"                                                "zoom-out"
+  "mattpocock/skills"                                                           "to-spec"
+  "mattpocock/skills"                                                           "to-tickets"
 
-  # --- Productivity (upstream skills/productivity/) ---
+  # --- Productivity ---
   "mattpocock/skills"                                                           "handoff"
-  "mattpocock/skills"                                                           "write-a-skill"
+  "mattpocock/skills"                                                           "writing-for-agents"
 )
 
 
@@ -588,10 +588,10 @@ Usage(){
       phase runs:
 
         - Engineering + productivity skills — via npx skills
-          add (Matt Pocock's TDD, diagnose, grill-me,
+          add (Matt Pocock's TDD, diagnosing-bugs, grill-me,
           grill-with-docs, improve-codebase-architecture,
-          triage, zoom-out, to-prd, to-issues, handoff,
-          write-a-skill, and the
+          triage, zoom-out, to-spec, to-tickets, handoff,
+          writing-for-agents, and the
           setup-matt-pocock-skills bootstrap).
 
       --eng is independent of --local, --math, and
@@ -680,8 +680,8 @@ Usage(){
                                       of --local and --math.
       --eng, --engineering            Also install Matt Pocock's
                                       engineering + productivity skills
-                                      (TDD, grill-me, to-issues,
-                                      write-a-skill, etc.).
+                                      (TDD, grill-me, to-tickets,
+                                      writing-for-agents, etc.).
                                       Independent of --local, --math,
                                       and --repo-tools.
 

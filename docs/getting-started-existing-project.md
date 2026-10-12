@@ -74,7 +74,7 @@ for gitignore and verification details.
 4. Run `npx gitnexus setup` when wiring agent integration.
 5. Run `graphify .` only when docs-heavy or multimodal context matters.
 6. Use `zoom-out` on the target area before editing unfamiliar code.
-7. Use `diagnose` before planning when the task starts from a bug, regression,
+7. Use `diagnosing-bugs` before planning when the task starts from a bug, regression,
    flaky behavior, or unclear failure.
 8. Use `grill-me` or `grill-with-docs` when requirements are not clear.
 9. Use `improve-codebase-architecture` when the change is structural or the
@@ -95,7 +95,7 @@ flowchart TD
     F --> H[Use zoom-out on the target area]
     G --> H
     H --> I{Existing bug or unclear failure?}
-    I -->|Yes| J[Use diagnose]
+    I -->|Yes| J[Use diagnosing-bugs]
     I -->|No| K{Requirements clear?}
     J --> K
     K -->|No| L[Use grill-me or grill-with-docs]
@@ -107,7 +107,7 @@ flowchart TD
     O --> P
     P --> Q[Make the smallest tested change]
     Q --> R{Bug, regression, or unclear failure?}
-    R -->|Yes| S[Use diagnose]
+    R -->|Yes| S[Use diagnosing-bugs]
     R -->|No| T[Validate tests and behavior]
     S --> T
     T --> U{Issue tracker needs cleanup?}
@@ -119,5 +119,5 @@ flowchart TD
 ## When to move on
 
 You are ready to edit when you know the current repo state, the target area has
-been oriented with `zoom-out`, any unclear failure has gone through `diagnose`,
+been oriented with `zoom-out`, any unclear failure has gone through `diagnosing-bugs`,
 and the next behavior can be expressed as a focused test or validation step.

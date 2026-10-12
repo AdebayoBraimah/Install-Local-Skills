@@ -1,6 +1,6 @@
 # Engineering Skills Guide: Matt Pocock's `mattpocock/skills`
 
-The 12 skills installed by `./install-skills.sh --eng` are a curated subset of [`mattpocock/skills`](https://github.com/mattpocock/skills), Matt Pocock's "anti-failure toolkit" for coding agents. They target four recurring failure modes: **misalignment** (the agent builds the wrong thing), **verbosity** (rambling code or comments), **non-functional code** (passes locally, breaks elsewhere), and **architectural decay** (small additions that erode structure over time).
+The 12 skills installed by `./install-skills.sh --eng` are a curated subset of Matt Pocock's "anti-failure toolkit" for coding agents. Most come from [`mattpocock/skills`](https://github.com/mattpocock/skills). The current slugs are `diagnosing-bugs`, `to-spec`, `to-tickets`, and `writing-for-agents`; `zoom-out` remains available through the compatible [`thangchung/mattpocock-skills`](https://github.com/thangchung/mattpocock-skills) mirror because upstream removed it. They target recurring failure modes: **misalignment** (the agent builds the wrong thing), **verbosity** (rambling code or comments), **non-functional code** (passes locally, breaks elsewhere), and **architectural decay** (small additions that erode structure over time).
 
 ## Per-project bootstrap
 
@@ -8,8 +8,8 @@ The 12 skills installed by `./install-skills.sh --eng` are a curated subset of [
 
 ## TL;DR
 
-- **Misalignment** → `grill-me` (or `grill-with-docs`) before planning; `to-prd` before tickets.
-- **Non-functional code** → `tdd` during implementation; `diagnose` on regressions.
+- **Misalignment** → `grill-me` (or `grill-with-docs`) before planning; `to-spec` before tickets.
+- **Non-functional code** → `tdd` during implementation; `diagnosing-bugs` on regressions.
 - **Architectural decay** → `improve-codebase-architecture` for refactors; `zoom-out` before edits to unfamiliar code; `triage` for issue state.
 
 ## The 12 skills
@@ -22,7 +22,7 @@ Per-project bootstrap. Writes the `## Agent skills` block into `AGENTS.md`/`CLAU
 
 Enforces a strict red-green-refactor loop: failing test first, minimum code to pass, refactor with the test as a safety net. Targets **non-functional code**. Invoke when starting a new feature or fix where correctness boundaries are clear enough to express as tests up front.
 
-### `diagnose`
+### `diagnosing-bugs`
 
 Structured debugging for bugs and performance regressions. Builds a hypothesis tree and prunes by observation rather than guessing. Targets **non-functional code**. Invoke on any "it used to work" or "intermittent" symptom — anywhere the cheap fix is to read three more lines and the costly fix is to patch a symptom.
 
@@ -46,21 +46,21 @@ Treats issue management as a state machine — new, accepted, in-progress, block
 
 Adds system-wide context to a code section: who calls it, what it depends on, what invariants surrounding code assumes. Targets **architectural decay** and **non-functional code** at the edit boundary. Invoke before editing unfamiliar code, especially in a monorepo or a module with non-local callers.
 
-### `to-prd`
+### `to-spec`
 
-Converts a conversation into a Product Requirements Document. Targets **misalignment** at the planning-to-PRD handoff. Pairs with `to-issues` for the PRD-to-tickets follow-up. Invoke when a free-form conversation has produced enough alignment to be worth pinning into a written spec.
+Turns the current conversation into a spec. Targets **misalignment** at the planning-to-spec handoff. Pairs with `to-tickets` for the spec-to-ticket follow-up. Invoke when a free-form conversation has produced enough alignment to be worth pinning into a written spec.
 
-### `to-issues`
+### `to-tickets`
 
-Converts the PRD produced by `to-prd` into a set of GitHub issues. Targets **misalignment** at the PRD-to-execution boundary. Invoke after `to-prd` when the plan is ready to be tracked as discrete tickets.
+Breaks a plan or spec into independently actionable tickets. Targets **misalignment** at the planning-to-execution boundary. Invoke after `to-spec` when the plan is ready to be tracked as discrete tickets.
 
 ### `handoff`
 
 Compacts the current conversation into a handoff document so a separate agent (or future you) can pick up the work without re-deriving state. Invoke at natural breakpoints in long sessions.
 
-### `write-a-skill`
+### `writing-for-agents`
 
-Scaffolds a new skill with proper structure, progressive disclosure, and bundled resources. Invoke when extracting a repeated workflow into a reusable skill.
+Guides writing documents for agents, including skills and agent instructions. Invoke when creating or editing skills, `AGENTS.md`, or `CLAUDE.md`.
 
 ## Suggested workflow
 
@@ -68,19 +68,19 @@ Scaffolds a new skill with proper structure, progressive disclosure, and bundled
 2. **Before planning:** `grill-me` (or `grill-with-docs` if you want the output persisted).
 3. **Before editing unfamiliar code:** `zoom-out`.
 4. **During implementation:** `tdd`.
-5. **On regressions or weird behavior:** `diagnose`.
+5. **On regressions or weird behavior:** `diagnosing-bugs`.
 6. **Before substantial new work or after sustained organic growth:** `improve-codebase-architecture`.
-7. **At the planning-to-PRD handoff:** `to-prd`.
-7a. **After PRD, before issue tracking:** `to-issues`.
+7. **At the planning-to-spec handoff:** `to-spec`.
+7a. **After the spec, before ticket tracking:** `to-tickets`.
 8. **For ongoing issue hygiene:** `triage`.
 
-The skills compose: `grill-me` → `to-prd` → `to-issues` → `triage` is a planning pipeline; `zoom-out` → `tdd` → `diagnose` is an editing pipeline; `improve-codebase-architecture` is the periodic structural pass.
+The skills compose: `grill-me` → `to-spec` → `to-tickets` → `triage` is a planning pipeline; `zoom-out` → `tdd` → `diagnosing-bugs` is an editing pipeline; `improve-codebase-architecture` is the periodic structural pass.
 
 ## Skills we did not include
 
 We omitted upstream skills that fall outside the "discipline" theme of this bundle:
 
-> **Now included (policy reversal):** `to-issues` was previously excluded "to keep the bundle scoped to discipline rather than issue tracking." That rationale has been reversed — the PRD → GitHub-issues handoff is now considered part of the discipline bundle, completing the `grill-me → to-prd → to-issues → triage` planning pipeline. Bundled with `--eng`.
+> **Now included (policy reversal):** `to-tickets` was previously excluded "to keep the bundle scoped to discipline rather than issue tracking." That rationale has been reversed — the spec → tickets handoff is now considered part of the discipline bundle, completing the `grill-me → to-spec → to-tickets → triage` planning pipeline. Bundled with `--eng`.
 
 - **`prototype`, `git-guardrails-claude-code`, `migrate-to-shoehorn`, `scaffold-exercises`, `setup-pre-commit`** — out of scope for this bundle (experimental, niche, or orthogonal to the discipline theme).
 

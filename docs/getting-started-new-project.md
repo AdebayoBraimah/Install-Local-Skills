@@ -28,7 +28,7 @@ Run `setup-matt-pocock-skills` once in the new project before relying on the
 other engineering skills. It provisions the agent-skills block and supporting
 `docs/agents/` structure that the workflow skills expect.
 
-For a brand-new project, run it before the first PRD, issue triage, or
+For a brand-new project, run it before the first spec, issue triage, or
 implementation task.
 
 ## Recommended order
@@ -37,12 +37,13 @@ implementation task.
 2. Use `grill-me` to clarify intent, constraints, and success criteria.
 3. Use `grill-with-docs` instead of `grill-me` when the decisions should
    become durable project context.
-4. Use `to-prd` when the requirements are stable enough to write down.
-5. Use `triage` to create, sort, and move work through an issue workflow.
-6. Use `tdd` for the first behavior and continue with a red-green-refactor loop.
-7. Use `diagnose` when a failure, regression, flaky behavior, or unclear
+4. Use `to-spec` when the requirements are stable enough to write down.
+5. Use `to-tickets` to split the spec into implementation tickets.
+6. Use `triage` to sort and move tickets through the issue workflow.
+7. Use `tdd` for the first behavior and continue with a red-green-refactor loop.
+8. Use `diagnosing-bugs` when a failure, regression, flaky behavior, or unclear
    symptom appears.
-8. Use `improve-codebase-architecture` later, after enough structure exists to evaluate.
+9. Use `improve-codebase-architecture` later, after enough structure exists to evaluate.
 
 ## Repository tools
 
@@ -80,11 +81,12 @@ flowchart TD
     C -->|No| E[Use grill-me]
     D --> F[Clarify goals, constraints, success criteria]
     E --> F
-    F --> G[Use to-prd when requirements are stable]
-    G --> H[Use triage to create and order work]
+    F --> G[Use to-spec when requirements are stable]
+    G --> GT[Use to-tickets to split the spec into work]
+    GT --> H[Use triage to order and track work]
     H --> I[Implement first behavior with tdd]
     I --> J{Failure or regression?}
-    J -->|Yes| K[Use diagnose]
+    J -->|Yes| K[Use diagnosing-bugs]
     J -->|No| L[Continue red-green-refactor]
     K --> L
     L --> M{Enough repo structure to analyze?}

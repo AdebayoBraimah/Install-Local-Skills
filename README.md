@@ -171,7 +171,7 @@ Start with the workflow guide that matches the project state:
   with TDD.
 - [Existing project workflow](docs/getting-started-existing-project.md) —
   orient in a brownfield repo, index and analyze the codebase, zoom out before
-  edits, diagnose unclear failures, then change safely.
+  edits, use `diagnosing-bugs` for unclear failures, then change safely.
 
 Use the deeper references when you need details about individual skills or
 repo-tool behavior:
@@ -228,17 +228,18 @@ If any skills, MCP servers, npm packages, or plugins fail, the summary lists the
 | Planning | `brainstorming` | obra/superpowers |
 | Code review | `deep-review` | coder/mux |
 | Notifications | `ntfy-notify` | gitstua/stu-skills |
-| Research | `deep-research` | shubhamsaboo/awesome-llm-apps |
-| Research | `academic-researcher` | shubhamsaboo/awesome-llm-apps |
+| Research | `deep-research` | 199-biotechnologies/claude-deep-research-skill |
+| Research | `academic-researcher` | silupanda/academic-researcher |
 | Research | `deep-research-academic` | submodules/claude-deep-research-skill (vendored fork of AdebayoBraimah/claude-deep-research-skill) |
 | Research | `research-paper-writer` | ailabs-393/ai-labs-claude-skills |
-| Research | `web-research` | langchain-ai/deepagents |
+| Research | `web-research` | memi-design/design-skills |
 | Research | `research-engineer` | davila7/claude-code-templates |
 | Diagrams | `mermaid-diagrams` | softaworks/agent-toolkit |
 | Diagrams | `excalidraw` | ooiyeefei/ccc |
 | Visualization | `data-visualization` | anthropics/knowledge-work-plugins |
 | Documentation | `context7` | intellectronica/agent-skills |
 | Writing | `humanizer` | blader/humanizer |
+| Writing | `unslop` | https://github.com/cursor/plugins/tree/main/pstack/skills/unslop |
 | CLI | `cli-anything` | hkuds/cli-anything |
 | Code quality | `ponytail` | dietrichgebert/ponytail |
 
@@ -514,28 +515,28 @@ This removes `~/.elan/`, all installed toolchains, and the PATH shim.
 
 Installed only when `--eng` (or its long form `--engineering`) is passed. The flag is independent of `--local`, `--math`, and `--repo-tools`; any combination may be passed.
 
-These are Matt Pocock's opinionated workflow skills from [`mattpocock/skills`](https://github.com/mattpocock/skills) — an "anti-failure" toolkit targeting misalignment, verbosity, broken code, and architectural decay. They are gated rather than always-on because they shape the agent's working style (TDD, adversarial grilling, PRD-first issue management), not because they're optional utilities.
+These are Matt Pocock's opinionated workflow skills — an "anti-failure" toolkit targeting misalignment, verbosity, broken code, and architectural decay. The source is [`mattpocock/skills`](https://github.com/mattpocock/skills). The installer uses `diagnosing-bugs`, `to-spec`, `to-tickets`, and `writing-for-agents` in place of the legacy `diagnose`, `to-prd`, `to-issues`, and `write-a-skill` entries, respectively. `zoom-out` remains on the compatible [`thangchung/mattpocock-skills`](https://github.com/thangchung/mattpocock-skills) mirror because upstream removed it. The `--eng` flag enables these workflow skills, including TDD, adversarial grilling, and spec-first issue management.
 
 | Category | Skill | Source | Description |
 |---|---|---|---|
 | Engineering discipline | `setup-matt-pocock-skills` | [mattpocock/skills](https://github.com/mattpocock/skills) | **Per-project bootstrap** — provisions the `## Agent skills` block in `AGENTS.md`/`CLAUDE.md` and the `docs/agents/` layout that the other 11 rely on. Run once per project before first use. |
 | Engineering discipline | `tdd` | [mattpocock/skills](https://github.com/mattpocock/skills) | Red-green-refactor loop discipline |
-| Engineering discipline | `diagnose` | [mattpocock/skills](https://github.com/mattpocock/skills) | Structured debugging for bugs and performance regressions |
+| Engineering discipline | `diagnosing-bugs` | [mattpocock/skills](https://github.com/mattpocock/skills) | Structured debugging for bugs and performance regressions |
 | Engineering discipline | `grill-me` | [mattpocock/skills](https://github.com/mattpocock/skills) | Adversarial questioning to drive alignment before coding |
 | Engineering discipline | `grill-with-docs` | [mattpocock/skills](https://github.com/mattpocock/skills) | Same loop, but updates the project's `CONTEXT.md` |
 | Engineering discipline | `improve-codebase-architecture` | [mattpocock/skills](https://github.com/mattpocock/skills) | Identifies structural improvement opportunities |
 | Engineering discipline | `triage` | [mattpocock/skills](https://github.com/mattpocock/skills) | Issue management via state machines |
-| Engineering discipline | `zoom-out` | [mattpocock/skills](https://github.com/mattpocock/skills) | Adds system-wide context to a code section |
-| Engineering discipline | `to-prd` | [mattpocock/skills](https://github.com/mattpocock/skills) | Converts conversations into PRDs (GitHub-issue creation is now handled by to-issues) |
-| Engineering discipline | `to-issues` | [mattpocock/skills](https://github.com/mattpocock/skills) | Converts a PRD into GitHub issues (companion to `to-prd`, completes the PRD → issues pipeline) |
+| Engineering discipline | `zoom-out` | [thangchung/mattpocock-skills](https://github.com/thangchung/mattpocock-skills) | Adds system-wide context to a code section |
+| Engineering discipline | `to-spec` | [mattpocock/skills](https://github.com/mattpocock/skills) | Converts conversations into specs |
+| Engineering discipline | `to-tickets` | [mattpocock/skills](https://github.com/mattpocock/skills) | Breaks plans or specs into implementation tickets |
 | Productivity | `handoff` | [mattpocock/skills](https://github.com/mattpocock/skills) | Compact current conversation into a handoff document for another agent |
-| Productivity | `write-a-skill` | [mattpocock/skills](https://github.com/mattpocock/skills) | Scaffold a new skill with proper structure and progressive disclosure |
+| Productivity | `writing-for-agents` | [mattpocock/skills](https://github.com/mattpocock/skills) | Write documents for agents, including skills and agent instructions |
 
-> **Cross-folder bundle (`mattpocock/skills`):** `grill-me`, `handoff`, and `write-a-skill` live under upstream `productivity/`; the remaining nine are from `engineering/`. They are grouped here for workflow coherence — the bundle is intentionally cross-folder.
+> **Cross-folder bundle:** This registry combines Matt Pocock's engineering and productivity skills. `zoom-out` uses a compatible mirror because it was removed from the current upstream catalog; each row identifies its source.
 
 > **Bootstrap reminder:** After installation, run `setup-matt-pocock-skills` **once per project** before first use of the other 11 (the bootstrap itself doesn't depend on itself). It writes the `AGENTS.md`/`CLAUDE.md` agent-skills block and `docs/agents/` layout the rest depend on; 10 of the 11 will silently degrade without it.
 
-> **Now included (policy reversal):** `to-issues` was previously excluded "to keep the bundle scoped to discipline rather than issue tracking." That rationale has been reversed — the PRD → GitHub-issues handoff is now considered part of the discipline bundle, completing the `grill-me → to-prd → to-issues → triage` planning pipeline. Bundled with `--eng`.
+> **Now included (policy reversal):** `to-tickets` was previously excluded "to keep the bundle scoped to discipline rather than issue tracking." That rationale has been reversed — the spec → tickets handoff is now considered part of the discipline bundle, completing the `grill-me → to-spec → to-tickets → triage` planning pipeline. Bundled with `--eng`.
 
 > **Choosing when to invoke:** See [docs/mattpocock-skills-guide.md](docs/mattpocock-skills-guide.md) for per-skill triggers and how the 12 compose into one workflow.
 

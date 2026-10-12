@@ -150,7 +150,7 @@ Process findings from highest to lowest severity.
    failure scenario.
 2. Read the relevant code, callers, existing tests, and repository conventions.
    Use the installed `tdd` guidance for idiomatic test construction or
-   `diagnose` when reproduction is non-obvious.
+   `diagnosing-bugs` when reproduction is non-obvious.
 3. Write the smallest test in the sandbox that asserts correct behavior. A test
    engineered merely to crash or to assert the buggy output is invalid.
 4. Run only that test or test file. Use a broader integration command only when

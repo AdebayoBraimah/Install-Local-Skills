@@ -78,8 +78,8 @@ Process findings highest-severity first. For each:
    smallest one that would exercise the claimed defect.
 2. **Write a minimal failing test** that asserts the *correct* behavior, so it
    **fails iff the bug is real**. Route to the `tdd` skill for idiomatic test
-   construction, or `diagnose` when reproduction is non-obvious. Place the test in the
-   sandbox's test tree, following the repo's conventions.
+   construction, or `diagnosing-bugs` when reproduction is non-obvious. Place
+   the test in the sandbox's test tree, following the repo's conventions.
 3. **Run just that test** with the detected runner (target the single test/file; do
    not run the whole suite unless the bug is a cross-cutting integration issue).
    Capture stdout/stderr and exit code.
